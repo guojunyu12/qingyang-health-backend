@@ -1,0 +1,13 @@
+{
+  "contractVersion": "QY-MYSQL-1.1.0",
+  "schemaVersion": "V004",
+  "baselineSha256": "64ec33a66c813321d12a7bbc29eff4d3981d6d3f3eacf6fc1eb7f9265efd3c56",
+  "businessTables": 44,
+  "m01Tables": 12,
+  "migrations": {
+    "V001__baseline.sql": "64ec33a66c813321d12a7bbc29eff4d3981d6d3f3eacf6fc1eb7f9265efd3c56",
+    "V002__email_identity.sql": "5707e59b161cd0ab8b781f6480ce2dc26c14b91b6331e5c9175e90388639530f",
+    "V003__safe_media_metadata.sql": "a134511f5f9c5e9be785c9c3f2baac4b9673f9871321d4206099d565e6f3ebdf",
+    "V004__encrypted_auth_retry.sql": "176a63b5dc487c9f8c6665eab4db46038b311b29cd629cff5ab40a400ad86344"
+  }
+}

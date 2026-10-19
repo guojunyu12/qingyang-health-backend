@@ -1,0 +1,1208 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "轻养 M01 账号与公共底座",
+    "version": "QY-MYSQL-1.1.0",
+    "description": "邮箱身份；本轮使用本地私有图片存储。Web Push/App Push未配置，订阅创建明确返回503。其他模块QueryPort与M05开户需整合。"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/auth/csrf": {
+      "get": {
+        "summary": "获取会话绑定CSRF",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/auth/email-codes": {
+      "post": {
+        "summary": "发送邮箱验证码",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Challenge"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "serverTime": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "timezone": {
+                          "const": "Asia/Shanghai"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "purpose": {
+                    "const": "login"
+                  }
+                },
+                "required": [
+                  "email",
+                  "purpose"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "邮箱验证后登录或注册",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "同一次认证重试复用；30秒内以专用加密结果恢复，不经过普通幂等缓存。不同内容同key返回409。",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "challengeId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[0-9]{6}$"
+                  },
+                  "deviceId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "platform": {
+                    "const": "h5"
+                  }
+                },
+                "required": [
+                  "challengeId",
+                  "code",
+                  "deviceId",
+                  "platform"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Cookie刷新凭据轮换",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "同一次认证重试复用；30秒内以专用加密结果恢复，不经过普通幂等缓存。不同内容同key返回409。",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "撤销当前会话",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "无响应体"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "summary": "真实账号摘要与短期头像URL",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Account"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "serverTime": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "timezone": {
+                          "const": "Asia/Shanghai"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      },
+      "patch": {
+        "summary": "编辑本人昵称和已就绪头像",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Account"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "serverTime": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "timezone": {
+                          "const": "Asia/Shanghai"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "nickname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
+                  "avatarAssetId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notification-subscriptions": {
+      "post": {
+        "summary": "订阅待配置，返回PUSH_NOT_CONFIGURED",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "503": {
+            "description": "返回data与meta，或明确配置缺项错误"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notification-subscriptions/{id}": {
+      "delete": {
+        "summary": "禁用本人设备订阅并清空敏感凭据",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "无响应体"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/me/notifications": {
+      "get": {
+        "summary": "分页查询本人站内通知",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/me/notifications/{id}/read": {
+      "put": {
+        "summary": "将本人通知标为已读",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/meta/contract": {
+      "get": {
+        "summary": "读取实际迁移版本与基线校验",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        }
+      }
+    },
+    "/notifications/capabilities": {
+      "get": {
+        "summary": "实际通知能力：站内true，外部false",
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "h5",
+                "ios",
+                "android"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        }
+      }
+    },
+    "/uploads/presign": {
+      "post": {
+        "summary": "申请本地私有图片上传URL",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "返回data与meta，或明确配置缺项错误"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "purpose": {
+                    "enum": [
+                      "meal_photo",
+                      "avatar",
+                      "course_cover",
+                      "activity_cover",
+                      "reward_image"
+                    ]
+                  },
+                  "filename": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 150
+                  },
+                  "contentType": {
+                    "enum": [
+                      "image/jpeg",
+                      "image/png",
+                      "image/webp"
+                    ]
+                  },
+                  "sizeBytes": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "checksumSha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                },
+                "required": [
+                  "purpose",
+                  "filename",
+                  "contentType",
+                  "sizeBytes",
+                  "checksumSha256"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads/{assetId}": {
+      "get": {
+        "summary": "查询本人资产和安全副本短签名",
+        "parameters": [
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "返回data与meta，或明确配置缺项错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/MediaAsset"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "serverTime": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "timezone": {
+                          "const": "Asia/Shanghai"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "删除本人未被引用资产",
+        "parameters": [
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "无响应体"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/uploads/{assetId}/complete": {
+      "post": {
+        "summary": "开始异步解码校验并去EXIF",
+        "parameters": [
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "返回data与meta，或明确配置缺项错误"
+          },
+          "401": {
+            "description": "未登录或验证码无效"
+          },
+          "403": {
+            "description": "权限、Origin或CSRF校验失败"
+          },
+          "409": {
+            "description": "幂等或资源状态冲突"
+          },
+          "422": {
+            "description": "参数无效"
+          },
+          "429": {
+            "description": "限流，包含retryAfterSeconds"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "checksumSha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                },
+                "required": [
+                  "checksumSha256"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "qy_access"
+      }
+    },
+    "schemas": {
+      "Account": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "description": "脱敏邮箱"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatarUrlExpiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "const": "Asia/Shanghai"
+          }
+        }
+      },
+      "Challenge": {
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresInSeconds": {
+            "const": 300
+          },
+          "resendAfterSeconds": {
+            "const": 60
+          }
+        }
+      },
+      "MediaAsset": {
+        "type": "object",
+        "properties": {
+          "assetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "validating",
+              "ready",
+              "rejected"
+            ]
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string",
+            "description": "就绪时为安全副本MIME"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "description": "就绪时为安全副本字节数"
+          },
+          "originalContentType": {
+            "type": "string"
+          },
+          "originalSizeBytes": {
+            "type": "integer"
+          },
+          "readUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "readUrlExpiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "errorCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "object"
+              },
+              "retryAfterSeconds": {
+                "type": "integer"
+              }
+            }
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,32 +1,18 @@
-# 轻养健康后端
+# 轻养健康后端 · M01
 
-对应前端：https://github.com/guojunyu12/qingyang-health-frontend
+NestJS + TypeScript、MySQL 8.4/mysql2、Redis/BullMQ、163 SMTP、本地私有图片存储。
 
-## 当前状态
+- [启动、功能和团队交接](docs/HANDOFF-M01.md)
+- [线上建表与已有库升级](db/releases/建表与升级说明.md)
+- [完整空库安装SQL](db/releases/QY-MYSQL-1.1.0_full_install.sql)
+- [M01专属12表参考SQL](db/releases/M01_12_tables_reference.sql)
+- [接口定义](contracts/openapi/M01.yaml)
+- [前端仓库](https://github.com/guojunyu12/qingyang-health-frontend)
 
-这是后端协作起点，当前交付统一 MySQL 基线、模块分工规范、邮箱认证设计和无秘密的配置模板。NestJS 服务、邮箱验证码接口、Worker 和业务模块尚未实现；当前没有可运行的后端启动命令。
+复制 `.env.example` 为忽略的 `.env.local` 并填写配置。`npm ci` 后执行 `npm run migrate`、`npm run dev` 和另一终端的 `npm run worker`。不要将真实密码、邮箱授权码、私有媒体或数据库数据提交Git。
 
-## 技术与目录约定
+本轮支持邮箱认证、资料/头像、站内通知、幂等/事务/Outbox与媒体校验。Web Push按用户决定待配置，视频转码及其他模块整合前置见交付说明，不能将尚未配置的能力报为上线完成。
 
-- NestJS + TypeScript、mysql2/promise、MySQL 8.4、Redis/BullMQ。
-- 此仓库根目录对应原协作规范中的 `server/`；后端代码后续放 `src/`，数据库放 `db/`，公共接口放 `contracts/`。
-- 原规范中的前端 `src/features/` 指前端仓库；后端 `server/src/` 在此仓库对应 `src/`。
-- M01 维护公共底座、依赖锁、迁移和整合；其他组仅修改其模块并提交 PR。
+测试：`npm test`运行单元测试，数据库集成需显式使用库名以`_test`结尾的独立测试库，例如 `DB_NAME=qingyang_auth_test npm test`；开发库不会自动跑集成用例。`npm run typecheck`、`npm run build`用于静态验证。
 
-## 数据库
-
-`db/migrations/V001__baseline.sql` 为冻结基线，共44张业务表。SHA-256：
-
-`64ec33a66c813321d12a7bbc29eff4d3981d6d3f3eacf6fc1eb7f9265efd3c56`
-
-只在新建空开发库执行一次，不重复运行或改写；后续由 M01 分配增量迁移。V001 保留原手机号字段，邮箱迁移尚待实施。每人使用自己的开发库，不合并各自测试数据。
-
-## 配置
-
-复制 `.env.example` 为被 Git 忽略的 `.env.local` 后在本机填写。真实SMTP授权码、数据库密码和个人环境文件不入库。配置模板不是已实现配置加载器。
-
-## 团队规范
-
-`docs/contracts/` 保存收到的 QY-MYSQL-1.0.0 分工与字段字典；`docs/email-auth-design.md` 记录邮箱认证变更方案。原工作包仍记载手机号认证，执行邮箱实现时须更新契约版本并同步六组。
-
-默认主分支 `main`；开发分支 `codex/m01-主题`、`codex/m02-主题` 等，PR 合并。跨仓库接口变更在交付单记录双方 commit、契约版本及迁移号。
+此仓库根目录对应原规范 `server/`；后端代码放 `src/`，公共契约 `contracts/`，数据库 `db/`。M01统一依赖锁与迁移；M02–M06只改自己的模块，经PR整合。V001冻结，后续只增量迁移。
