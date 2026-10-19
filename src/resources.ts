@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
-import { IdentityService } from "./modules/identity/service.js";
+import { IdentityService, account } from "./modules/identity/service.js";
 import { MediaService } from "./modules/uploads/service.js";
 import { NotificationService } from "./modules/notifications/service.js";
-import { transaction } from "./common/database.js";
+import { transaction, rows } from "./common/database.js";
 import { equal } from "./modules/identity/crypto.js";
-import { idempotent, audit } from "./common/foundation.js";
+import { idempotent, audit, isUuid } from "./common/foundation.js";
 import { reject } from "./common/error.js";
 const media = new MediaService();
 const notices = new NotificationService();
@@ -81,7 +81,13 @@ export async function resources(
           input.nickname.trim().length > 30))
     )
       reject(422, "INVALID_INPUT", "昵称需要1至30个字符");
-    await command(async (c, ctx) => {
+    if (
+      input.avatarAssetId !== undefined &&
+      input.avatarAssetId !== null &&
+      !isUuid(input.avatarAssetId)
+    )
+      reject(422, "INVALID_INPUT", "头像标识无效");
+    const saved = await command(async (c, ctx) => {
       if (input.avatarAssetId !== undefined && input.avatarAssetId !== null)
         await media.assertReady(c, {
           assetId: input.avatarAssetId,
@@ -102,9 +108,19 @@ export async function resources(
       await audit(c, ctx, "account.update", "user", s.id, {
         fields: Object.keys(input),
       });
-      return { updated: true };
+      const current = (
+        await rows(c, "SELECT * FROM users WHERE id=?", [s.id])
+      )[0];
+      const signed = current.avatar_asset_id
+        ? await media.readUrl(c, s.id, current.avatar_asset_id)
+        : null;
+      return {
+        ...account(current),
+        avatarUrl: signed?.readUrl ?? null,
+        avatarUrlExpiresAt: signed?.readUrlExpiresAt ?? null,
+      };
     });
-    return { status: 200, data: await identity.me(req.cookies.qy_access) };
+    return { status: 200, data: saved };
   }
   if (p === "/uploads/presign" && method === "POST") {
     shape([

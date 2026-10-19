@@ -29,7 +29,7 @@ const uuid = (s: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
     s,
   );
-const account = (u: any): Account => {
+export const account = (u: any): Account => {
   const email = decrypt(u.email_ciphertext);
   const [local, domain] = email.split("@");
   return {

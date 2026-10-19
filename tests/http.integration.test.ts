@@ -74,14 +74,33 @@ integration(
         ).status,
         403,
       );
+      const profileKey = randomUUID();
       response = await request(
         "/me",
         "PATCH",
         { nickname: "新昵称" },
-        { "X-CSRF-Token": csrf, "Idempotency-Key": randomUUID() },
+        { "X-CSRF-Token": csrf, "Idempotency-Key": profileKey },
       );
       assert.equal(response.status, 200);
       assert.equal((await response.json()).data.nickname, "新昵称");
+      await request(
+        "/me",
+        "PATCH",
+        { nickname: "后一次修改" },
+        { "X-CSRF-Token": csrf, "Idempotency-Key": randomUUID() },
+      );
+      const replay = await request(
+        "/me",
+        "PATCH",
+        { nickname: "新昵称" },
+        { "X-CSRF-Token": csrf, "Idempotency-Key": profileKey },
+      );
+      assert.equal(
+        (await replay.json()).data.nickname,
+        "新昵称",
+        "replay returns original result rather than current profile",
+      );
+
       assert.equal(
         (
           await request(
