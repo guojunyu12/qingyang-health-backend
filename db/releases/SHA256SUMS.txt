@@ -1,3 +1,3 @@
 d82c4780934482c5918da0e21d9dfef7098bef7b3d86e722013555367548dc0b  M01_12_tables_reference.sql
 573bfe45b8740e77ddbfba3e58a4e5f01938cd67cd2e56ed9957f6fdac4c0c40  QY-MYSQL-1.1.0_full_install.sql
-97fccf404dcc79aaad14885fb63c11527b2c464785aa586e9fdf922e6e50f06f  QY-MYSQL-1.1.0_upgrade_from_V001.sql
+e470a18f924b7f79d7de4584ceb0d131162b80f2780403a8a1c5d4e6091bc2ba  QY-MYSQL-1.1.0_upgrade_from_V001.sql

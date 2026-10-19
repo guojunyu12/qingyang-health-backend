@@ -16,6 +16,8 @@ foreign='\n'.join(line for line in base.splitlines() if line.startswith('ALTER T
 (root/'db/releases/M01_12_tables_reference.sql').write_text('-- M01专属12表参考。仅供独立空库检查，不登记全库迁移版本。\n-- 完整应用与线上团队数据库请执行full_install.sql，切勿同时执行两份。\n'+prefix+m01+'\n'+foreign+'\n'+email+'\n'+safe+'\n'+retry)
 guard="""-- Only a verified V001 installation with no legacy phone identities may upgrade.
 -- Never use mysql --force. Stop on the first error.
+SET SESSION time_zone='+00:00';
+SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 CREATE TEMPORARY TABLE qy_m01_upgrade_guard (invalid_state INT NOT NULL CHECK(invalid_state=0));
 INSERT INTO qy_m01_upgrade_guard SELECT CASE WHEN
  (SELECT COUNT(*) FROM users)=0 AND (SELECT COUNT(*) FROM auth_challenges)=0

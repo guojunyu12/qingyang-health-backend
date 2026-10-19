@@ -1,5 +1,7 @@
 -- Only a verified V001 installation with no legacy phone identities may upgrade.
 -- Never use mysql --force. Stop on the first error.
+SET SESSION time_zone='+00:00';
+SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 CREATE TEMPORARY TABLE qy_m01_upgrade_guard (invalid_state INT NOT NULL CHECK(invalid_state=0));
 INSERT INTO qy_m01_upgrade_guard SELECT CASE WHEN
  (SELECT COUNT(*) FROM users)=0 AND (SELECT COUNT(*) FROM auth_challenges)=0
