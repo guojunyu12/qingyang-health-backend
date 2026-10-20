@@ -1312,7 +1312,7 @@
       "sessionCookie": {
         "type": "apiKey",
         "in": "cookie",
-        "name": "由M01统一会话Cookie命名"
+        "name": "qy_access"
       }
     },
     "schemas": {
