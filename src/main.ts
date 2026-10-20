@@ -1,3 +1,4 @@
+import { healthResources } from "./modules/health/integration.js";
 import "reflect-metadata";
 import { modulePorts } from "./common/ports.js";
 import { clientIp } from "./common/client-ip.js";
@@ -170,7 +171,7 @@ export async function createApp(service = new IdentityService()) {
           break;
         }
         default: {
-          const extra = await resources(req, res, service);
+          const extra = (await healthResources(req, res, service)) ?? (await resources(req, res, service));
           if (!extra) reject(404, "NOT_FOUND", "接口不存在");
           if (extra.raw) return;
           if (extra.status === 204) {

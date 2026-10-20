@@ -143,20 +143,23 @@ export interface ActivitiesQueryPort { activeBookingCount(tx:SqlTx,userId:UUID,a
 export interface HealthDay { date:ISODate; waterMl:number; hasWaterRecord:boolean; weightKg:number|null; }
 export interface HealthQueryPort { profile(tx:SqlTx,userId:UUID):Promise<HealthProfileDto|null>; days(tx:SqlTx,userId:UUID,startDate:ISODate,endDate:ISODate):Promise<HealthDay[]>; }
 
+export interface HealthAvailability { nutrition:boolean; training:boolean; points:boolean; rewards:boolean; companion:boolean; activities:boolean; }
 export interface DashboardDto {
+  availability?: HealthAvailability;
   date:ISODate; isDemo:false;
   water:{totalMl:number;targetMl:number|null;progress:number|null};
   weight:{latestKg:number|null;targetKg:number|null;previousKg:number|null;changeKg:number|null;bmi:number|null};
-  energy:{intakeKcal:number;exerciseKcal:number;baseTargetKcal:number|null;effectiveTargetKcal:number|null;remainingKcal:number|null;exceededKcal:number|null};
-  nutrients:{carbs:{consumedG:number;targetG:number|null;complete:boolean};protein:{consumedG:number;targetG:number|null;complete:boolean};fat:{consumedG:number;targetG:number|null;complete:boolean}};
+  energy:{intakeKcal:number|null;exerciseKcal:number|null;baseTargetKcal:number|null;effectiveTargetKcal:number|null;remainingKcal:number|null;exceededKcal:number|null};
+  nutrients:{carbs:{consumedG:number|null;targetG:number|null;complete:boolean};protein:{consumedG:number|null;targetG:number|null;complete:boolean};fat:{consumedG:number|null;targetG:number|null;complete:boolean}};
   week:{date:ISODate;hasMealRecord:boolean;hasTrainingRecord:boolean}[];
-  latestMeal:MealDto|null; recommendedWorkout:CourseDto|null; pointsBalance:number; dailyTasks:TaskDto[]; generatedAt:Instant;
+  latestMeal:MealDto|null; recommendedWorkout:CourseDto|null; pointsBalance:number|null; dailyTasks:TaskDto[]; generatedAt:Instant;
 }
 export interface OverviewDto {
+  availability?: HealthAvailability;
   range:7|30;startDate:ISODate;endDate:ISODate;generatedAt:Instant;
-  summary:{avgIntakeKcal:number|null;avgWaterMl:number|null;completedWorkouts:number;totalExerciseKcal:number;latestWeightKg:number|null;moodRecordedDays:number;pointsBalance:number;activeBookings:number};
-  series:{date:ISODate;intakeKcal:number;exerciseKcal:number;waterMl:number;weightKg:number|null;mood:Mood|null;completedWorkouts:number;hasMealRecord:boolean;hasWaterRecord:boolean}[];
-  coverage:{mealDays:number;waterDays:number;weightDays:number;moodDays:number;rangeDays:number};
+  summary:{avgIntakeKcal:number|null;avgWaterMl:number|null;completedWorkouts:number|null;totalExerciseKcal:number|null;latestWeightKg:number|null;moodRecordedDays:number|null;pointsBalance:number|null;activeBookings:number|null};
+  series:{date:ISODate;intakeKcal:number|null;exerciseKcal:number|null;waterMl:number;weightKg:number|null;mood:Mood|null;completedWorkouts:number|null;hasMealRecord:boolean;hasWaterRecord:boolean}[];
+  coverage:{mealDays:number|null;waterDays:number;weightDays:number;moodDays:number|null;rangeDays:number};
 }
 
 /** Query ports use the provided read-snapshot tx. Days methods return recorded rows only; M02 fills the date grid. */

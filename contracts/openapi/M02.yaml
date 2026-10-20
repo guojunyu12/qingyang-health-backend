@@ -1,0 +1,2578 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "轻养 M02 健康记录与个人看板",
+    "version": "QY-MYSQL-1.1.0",
+    "description": "10 个接口；已接入 M01 邮箱会话、CSRF、统一幂等事务。仅写 M02 三表。跨模块未注册时 availability=false，对应聚合测量返回 null；饮水仍保存，rewardsAvailable=false 且不发积分。"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/me/dashboard": {
+      "get": {
+        "operationId": "getDashboard",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Dashboard"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "Asia/Shanghai"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/me/health-profile": {
+      "get": {
+        "operationId": "getHealthProfile",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/HealthProfile"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "putHealthProfile",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/HealthProfile"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthProfileInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/health/overview": {
+      "get": {
+        "operationId": "getOverview",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Overview"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                7,
+                30
+              ],
+              "default": 7
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/me/water-records": {
+      "get": {
+        "operationId": "listWaterRecords",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/WaterPage"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createWaterRecord",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CreateWaterResult"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaterInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/water-records/{id}": {
+      "delete": {
+        "operationId": "deleteWaterRecord",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "204": {
+            "description": "成功"
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/me/weight-records": {
+      "get": {
+        "operationId": "listWeightRecords",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/WeightPage"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createWeightRecord",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/WeightRecord"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeightInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/weight-records/{id}": {
+      "delete": {
+        "operationId": "deleteWeightRecord",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "204": {
+            "description": "成功"
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      }
+    },
+    "schemas": {
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "const": "Asia/Shanghai"
+          }
+        },
+        "required": [
+          "requestId",
+          "serverTime",
+          "timezone"
+        ],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "retryAfterSeconds": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+              },
+              "serverTime": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "requestId",
+              "serverTime"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "HealthProfileInput": {
+        "type": "object",
+        "properties": {
+          "heightCm": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 50,
+            "maximum": 250,
+            "multipleOf": 0.1
+          },
+          "birthYear": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1900,
+            "maximum": 9999
+          },
+          "targetWeightKg": {
+            "type": "number",
+            "minimum": 20,
+            "maximum": 350,
+            "multipleOf": 0.1
+          },
+          "waterTargetMl": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 6000
+          },
+          "calorieTargetKcal": {
+            "type": "number",
+            "minimum": 800,
+            "maximum": 5000,
+            "multipleOf": 0.1
+          },
+          "carbsTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "proteinTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "fatTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "goalType": {
+            "enum": [
+              "balanced",
+              "maintain",
+              "lose",
+              "gain"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483646
+          }
+        },
+        "required": [
+          "targetWeightKg",
+          "waterTargetMl",
+          "calorieTargetKcal",
+          "goalType",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "HealthProfile": {
+        "type": "object",
+        "properties": {
+          "heightCm": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 50,
+            "maximum": 250,
+            "multipleOf": 0.1
+          },
+          "birthYear": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1900,
+            "maximum": 9999
+          },
+          "targetWeightKg": {
+            "type": "number",
+            "minimum": 20,
+            "maximum": 350,
+            "multipleOf": 0.1
+          },
+          "waterTargetMl": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 6000
+          },
+          "calorieTargetKcal": {
+            "type": "number",
+            "minimum": 800,
+            "maximum": 5000,
+            "multipleOf": 0.1
+          },
+          "carbsTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "proteinTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "fatTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "goalType": {
+            "enum": [
+              "balanced",
+              "maintain",
+              "lose",
+              "gain"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "heightCm",
+          "birthYear",
+          "targetWeightKg",
+          "waterTargetMl",
+          "calorieTargetKcal",
+          "carbsTargetG",
+          "proteinTargetG",
+          "fatTargetG",
+          "goalType",
+          "version",
+          "id",
+          "userId",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "WaterRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "const": "manual"
+          },
+          "amountMl": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "id",
+          "recordedAt",
+          "businessDate",
+          "source",
+          "amountMl"
+        ],
+        "additionalProperties": false
+      },
+      "WeightRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "const": "manual"
+          },
+          "weightKg": {
+            "type": "number",
+            "minimum": 20,
+            "maximum": 350,
+            "multipleOf": 0.1
+          }
+        },
+        "required": [
+          "id",
+          "recordedAt",
+          "businessDate",
+          "source",
+          "weightKg"
+        ],
+        "additionalProperties": false
+      },
+      "WaterInput": {
+        "type": "object",
+        "properties": {
+          "amountMl": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "必须含时区，当前时刻之前30天内；未填使用同事务服务端 operationNow"
+          },
+          "source": {
+            "const": "manual"
+          }
+        },
+        "required": [
+          "amountMl"
+        ],
+        "additionalProperties": false
+      },
+      "WaterPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaterRecord"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "WeightInput": {
+        "type": "object",
+        "properties": {
+          "weightKg": {
+            "type": "number",
+            "minimum": 20,
+            "maximum": 350,
+            "multipleOf": 0.1
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "必须含时区，当前时刻之前30天内；未填使用同事务服务端 operationNow"
+          },
+          "source": {
+            "const": "manual"
+          }
+        },
+        "required": [
+          "weightKg"
+        ],
+        "additionalProperties": false
+      },
+      "WeightPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeightRecord"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "WaterSummary": {
+        "type": "object",
+        "properties": {
+          "totalMl": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6000
+          },
+          "targetMl": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "progress": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "totalMl",
+          "targetMl",
+          "progress"
+        ],
+        "additionalProperties": false
+      },
+      "PointAward": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "taskCode": {
+            "enum": [
+              "daily_checkin",
+              "daily_water",
+              "daily_meal",
+              "course_workout"
+            ]
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "scopeKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "taskCode",
+          "points",
+          "businessDate",
+          "scopeKey"
+        ],
+        "additionalProperties": false
+      },
+      "CreateWaterResult": {
+        "type": "object",
+        "properties": {
+          "record": {
+            "$ref": "#/components/schemas/WaterRecord"
+          },
+          "todaySummary": {
+            "$ref": "#/components/schemas/WaterSummary"
+          },
+          "awards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PointAward"
+            }
+          },
+          "rewardsAvailable": {
+            "type": "boolean",
+            "description": "false 表示积分端口未注册，本次仅保存饮水记录"
+          }
+        },
+        "required": [
+          "record",
+          "todaySummary",
+          "awards",
+          "rewardsAvailable"
+        ],
+        "additionalProperties": false
+      },
+      "MealItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "foodId": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "grams": {
+            "type": "number"
+          },
+          "caloriesKcal": {
+            "type": "number"
+          },
+          "carbsG": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "proteinG": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "fatG": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "nutritionSource": {
+            "enum": [
+              "catalog",
+              "model",
+              "user"
+            ]
+          },
+          "confidence": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "foodId",
+          "name",
+          "grams",
+          "caloriesKcal",
+          "carbsG",
+          "proteinG",
+          "fatG",
+          "nutritionSource",
+          "confidence"
+        ],
+        "additionalProperties": false
+      },
+      "Meal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "mealType": {
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack"
+            ]
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "enum": [
+              "manual",
+              "photo"
+            ]
+          },
+          "photoAssetId": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MealItem"
+            }
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "caloriesKcal": {
+                "type": "number"
+              },
+              "carbsG": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "proteinG": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "fatG": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "caloriesKcal",
+              "carbsG",
+              "proteinG",
+              "fatG"
+            ],
+            "additionalProperties": false
+          },
+          "version": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "mealType",
+          "recordedAt",
+          "businessDate",
+          "source",
+          "photoAssetId",
+          "photoUrl",
+          "items",
+          "totals",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "Course": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "stretch",
+              "strength",
+              "cardio"
+            ]
+          },
+          "level": {
+            "enum": [
+              "beginner",
+              "intermediate"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "coverUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "videoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "estimatedDurationSeconds": {
+            "type": "integer"
+          },
+          "estimatedCaloriesKcal": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "version": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "category",
+          "level",
+          "description",
+          "coverUrl",
+          "videoUrl",
+          "estimatedDurationSeconds",
+          "estimatedCaloriesKcal",
+          "status",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "enum": [
+              "daily_checkin",
+              "daily_water",
+              "daily_meal",
+              "course_workout"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rewardPoints": {
+            "type": "integer"
+          },
+          "progress": {
+            "type": "number"
+          },
+          "target": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "completed"
+            ]
+          },
+          "completedAt": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "action": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "navigate",
+                  "checkin"
+                ]
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "code",
+          "title",
+          "description",
+          "rewardPoints",
+          "progress",
+          "target",
+          "status",
+          "completedAt",
+          "action"
+        ],
+        "additionalProperties": false
+      },
+      "Dashboard": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "isDemo": {
+            "const": false
+          },
+          "water": {
+            "$ref": "#/components/schemas/WaterSummary"
+          },
+          "weight": {
+            "type": "object",
+            "properties": {
+              "latestKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "targetKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "previousKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "changeKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "bmi": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "latestKg",
+              "targetKg",
+              "previousKg",
+              "changeKg",
+              "bmi"
+            ],
+            "additionalProperties": false
+          },
+          "energy": {
+            "type": "object",
+            "properties": {
+              "intakeKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "exerciseKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "baseTargetKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "effectiveTargetKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "remainingKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "exceededKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "intakeKcal",
+              "exerciseKcal",
+              "baseTargetKcal",
+              "effectiveTargetKcal",
+              "remainingKcal",
+              "exceededKcal"
+            ],
+            "additionalProperties": false
+          },
+          "nutrients": {
+            "type": "object",
+            "properties": {
+              "carbs": {
+                "type": "object",
+                "properties": {
+                  "consumedG": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "targetG": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "complete": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "consumedG",
+                  "targetG",
+                  "complete"
+                ],
+                "additionalProperties": false
+              },
+              "protein": {
+                "type": "object",
+                "properties": {
+                  "consumedG": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "targetG": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "complete": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "consumedG",
+                  "targetG",
+                  "complete"
+                ],
+                "additionalProperties": false
+              },
+              "fat": {
+                "type": "object",
+                "properties": {
+                  "consumedG": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "targetG": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "complete": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "consumedG",
+                  "targetG",
+                  "complete"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "carbs",
+              "protein",
+              "fat"
+            ],
+            "additionalProperties": false
+          },
+          "week": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "hasMealRecord": {
+                  "type": "boolean"
+                },
+                "hasTrainingRecord": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "date",
+                "hasMealRecord",
+                "hasTrainingRecord"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "latestMeal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Meal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recommendedWorkout": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Course"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pointsBalance": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "dailyTasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            }
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/HealthAvailability"
+          }
+        },
+        "required": [
+          "date",
+          "isDemo",
+          "water",
+          "weight",
+          "energy",
+          "nutrients",
+          "week",
+          "latestMeal",
+          "recommendedWorkout",
+          "pointsBalance",
+          "dailyTasks",
+          "generatedAt",
+          "availability"
+        ],
+        "additionalProperties": false
+      },
+      "Overview": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "enum": [
+              7,
+              30
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "avgIntakeKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "avgWaterMl": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "latestWeightKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "completedWorkouts": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "moodRecordedDays": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "pointsBalance": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "activeBookings": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "totalExerciseKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "avgIntakeKcal",
+              "avgWaterMl",
+              "latestWeightKg",
+              "completedWorkouts",
+              "moodRecordedDays",
+              "pointsBalance",
+              "activeBookings",
+              "totalExerciseKcal"
+            ],
+            "additionalProperties": false
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "intakeKcal": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "exerciseKcal": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "waterMl": {
+                  "type": "integer"
+                },
+                "weightKg": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "mood": {
+                  "enum": [
+                    "happy",
+                    "calm",
+                    "tired",
+                    "low",
+                    null
+                  ]
+                },
+                "completedWorkouts": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "hasMealRecord": {
+                  "type": "boolean"
+                },
+                "hasWaterRecord": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "date",
+                "intakeKcal",
+                "exerciseKcal",
+                "waterMl",
+                "weightKg",
+                "mood",
+                "completedWorkouts",
+                "hasMealRecord",
+                "hasWaterRecord"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "mealDays": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 30
+              },
+              "waterDays": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              },
+              "weightDays": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              },
+              "moodDays": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 30
+              },
+              "rangeDays": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              }
+            },
+            "required": [
+              "mealDays",
+              "waterDays",
+              "weightDays",
+              "moodDays",
+              "rangeDays"
+            ],
+            "additionalProperties": false
+          },
+          "availability": {
+            "$ref": "#/components/schemas/HealthAvailability"
+          }
+        },
+        "required": [
+          "range",
+          "startDate",
+          "endDate",
+          "generatedAt",
+          "summary",
+          "series",
+          "coverage",
+          "availability"
+        ],
+        "additionalProperties": false
+      },
+      "HealthAvailability": {
+        "type": "object",
+        "properties": {
+          "nutrition": {
+            "type": "boolean"
+          },
+          "training": {
+            "type": "boolean"
+          },
+          "points": {
+            "type": "boolean"
+          },
+          "rewards": {
+            "type": "boolean"
+          },
+          "companion": {
+            "type": "boolean"
+          },
+          "activities": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "nutrition",
+          "training",
+          "points",
+          "rewards",
+          "companion",
+          "activities"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

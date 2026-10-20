@@ -4,7 +4,7 @@ import type {
   UnitOfWork,
   OutboxPort,
   MediaPort,
-  PointsPort,
+  PointsPort, NutritionQueryPort, TrainingQueryPort, PointsQueryPort, CompanionQueryPort, ActivitiesQueryPort,
 } from "../../contracts/shared_types.js";
 import { requireAdmin, audit } from "./foundation.js";
 import { unitOfWork } from "./foundation.js";
@@ -111,7 +111,7 @@ export const mediaPort: MediaPort = {
   },
 };
 /** M05 registers its real port; no zero-balance mock or cross-module writes here. */
-export const modulePorts: { points?: PointsPort } = {};
+export const modulePorts: { points?: PointsPort; nutrition?: NutritionQueryPort; training?: TrainingQueryPort; pointsQuery?: PointsQueryPort; companion?: CompanionQueryPort; activities?: ActivitiesQueryPort } = {};
 
 export const userAdministrationPort = {
   disableInTransaction: async (
