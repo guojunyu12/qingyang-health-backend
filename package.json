@@ -10,7 +10,8 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "migrate": "node --import tsx scripts/migrate.ts",
     "worker": "node --import tsx src/worker.ts",
-    "media:backfill": "node --import tsx scripts/backfill-media.ts"
+    "media:backfill": "node --import tsx scripts/backfill-media.ts",
+    "seed:m03": "node --import tsx scripts/seed-m03.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.2.0",
@@ -19,6 +20,7 @@
     "bullmq": "^6.3.17",
     "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.8",
+    "gcoord": "1.0.7",
     "ioredis": "^6.0.0",
     "mysql2": "^3.24.6",
     "nodemailer": "^10.1.7",
