@@ -1,4 +1,5 @@
 import { healthResources } from "./modules/health/integration.js";
+import { nutritionResources } from "./modules/nutrition/integration.js";
 import "reflect-metadata";
 import { modulePorts } from "./common/ports.js";
 import { clientIp } from "./common/client-ip.js";
@@ -32,6 +33,9 @@ export async function createApp(service = new IdentityService()) {
   app.use(cookieParser());
   const express = app.getHttpAdapter().getInstance();
   const { default: bodyParser } = await import("express");
+  // Thirty named food items can exceed the small public/auth payload budget.
+  // Scope the larger limit to M03; keep M01/M02 limits unchanged.
+  app.use('/api/v1/me/meals', bodyParser.json({limit:'32kb'}));
   app.use(bodyParser.json({ limit: "8kb" }));
   express.use("/api/v1", async (req: Request, res: Response) => {
     res.setHeader("Cache-Control", "no-store");
@@ -171,7 +175,7 @@ export async function createApp(service = new IdentityService()) {
           break;
         }
         default: {
-          const extra = (await healthResources(req, res, service)) ?? (await resources(req, res, service));
+          const extra = (await healthResources(req, res, service)) ?? (await nutritionResources(req, res, service)) ?? (await resources(req, res, service));
           if (!extra) reject(404, "NOT_FOUND", "接口不存在");
           if (extra.raw) return;
           if (extra.status === 204) {

@@ -25,7 +25,7 @@ integration('M02 real auth/CSRF, profile versions, water idempotency/isolation, 
   await login();
   assert.equal((await request('/me/water-records','POST',{amountMl:250},randomUUID(),'')).status,403);
   let r=await request('/me/dashboard'); assert.equal(r.status,200); let d=(await r.json()).data;
-  assert.equal(d.water.totalMl,0);assert.equal(d.energy.intakeKcal,null);assert.equal(d.energy.exerciseKcal,null);assert.equal(d.availability.points,false); assert.equal(d.pointsBalance,null);
+  assert.equal(d.water.totalMl,0);assert.equal(d.energy.intakeKcal,0);assert.equal(d.availability.nutrition,true);assert.equal(d.energy.exerciseKcal,null);assert.equal(d.availability.points,false); assert.equal(d.pointsBalance,null);
   const profile={version:0,targetWeightKg:60,waterTargetMl:2000,calorieTargetKcal:1800,goalType:'balanced'};
   r=await request('/me/health-profile','PUT',profile); assert.equal(r.status,200); assert.equal((await r.json()).data.version,1);
   assert.equal((await request('/me/health-profile','PUT',profile)).status,409);
