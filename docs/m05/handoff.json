@@ -1,0 +1,67 @@
+{
+  "project": "qingyang-m05",
+  "phase": 7,
+  "contractVersion": "QY-MYSQL-1.0.0",
+  "schemaVersion": "V002_M05",
+  "mysql": "8.4",
+  "entrypoints": {
+    "h5Frontend": "web/frontend",
+    "h5Backend": "web/backend",
+    "adminFrontend": "server/frontend",
+    "adminBackend": "server/backend",
+    "database": "db"
+  },
+  "migrations": [
+    {
+      "file": "db/V001__baseline.sql",
+      "sha256": "64ec33a66c813321d12a7bbc29eff4d3981d6d3f3eacf6fc1eb7f9265efd3c56",
+      "owner": "M01",
+      "immutable": true
+    },
+    {
+      "file": "db/V002__m05_messages.sql",
+      "sha256": "c5d2ca488266a1da4996bc83b179badfeaf3c42ce3211c2a4e6699a971070d3c",
+      "owner": "M05 local; M01 assigns global version",
+      "immutable": false
+    }
+  ],
+  "sharedContractSha256": "cf1dfde1fb9ef8dbf0a784dd9511fb7c93316c0299c20db8c02ad08e3b15ec32",
+  "businessTables": 46,
+  "developmentFixtureUserIds": {
+    "A": "a0000000-0000-4000-8000-000000000001",
+    "B": "a0000000-0000-4000-8000-000000000002",
+    "admin": "a0000000-0000-4000-8000-000000000003"
+  },
+  "doNotMerge": [
+    ".runtime",
+    "local MySQL data",
+    "development sessions",
+    "TEST-ONLY provider files",
+    "secrets"
+  ],
+  "notifications": {
+    "implemented": "in-app inbox",
+    "sms": false,
+    "externalDelivery": false
+  },
+  "eventOwners": {
+    "points.redemption.requested.v1": "reward_worker",
+    "points.redemption.finished.v1": "notification_worker",
+    "activity.booking.confirmed.v1": "notification_worker",
+    "activity.booking.canceled.v1": "notification_worker",
+    "activity.slot.canceled.v1": "notification_worker",
+    "m05.message.campaign.requested.v1": "notification_worker",
+    "media.validate.requested.v1": "media_worker"
+  },
+  "externalAdapters": {
+    "identity": "M01",
+    "unitOfWork": "M01",
+    "notification": "M01",
+    "media": "M01",
+    "userAdministration": "M01",
+    "rewardProvider": "M05 real supplier integration",
+    "waterMealWorkoutSource": "M02/M03/M04"
+  },
+  "acceptance": "design/phase-07/review.json",
+  "guide": "design/phase-07/integration.md"
+}

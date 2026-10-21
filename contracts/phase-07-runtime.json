@@ -1,0 +1,27 @@
+{
+  "phase": 7,
+  "contractVersion": "QY-MYSQL-1.0.0",
+  "schemaVersion": "V002_M05",
+  "endpoints": [
+    {
+      "id": "E17",
+      "method": "GET",
+      "path": "/api/v1/admin/overview",
+      "auth": "admin",
+      "response": {
+        "totalAvailablePoints": "number",
+        "publishedActivities": "number",
+        "confirmedBookings": "number",
+        "publishedRewards": "number",
+        "pendingRedemptions": "number",
+        "openReports": "number",
+        "sentCampaigns": "number",
+        "unreadNotifications": "number"
+      },
+      "semantics": "single REPEATABLE READ snapshot; includes only M05 business sources; read-only"
+    }
+  ],
+  "notificationScope": "in_app_only",
+  "smsInScope": false,
+  "integrationGuide": "../design/phase-07/integration.md"
+}
