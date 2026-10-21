@@ -1,0 +1,263 @@
+{
+  "module": "M02",
+  "part": "backend",
+  "sourceContract": "QY-MYSQL-1.0.0",
+  "frozenV001Sha256": "64ec33a66c813321d12a7bbc29eff4d3981d6d3f3eacf6fc1eb7f9265efd3c56",
+  "originalFiles": {
+    "ACCEPTANCE.md": {
+      "sha256": "8e2bd7ba0330992c26e9c0de24f7b1012abfa8946e816460e6170c90ef135797",
+      "bytes": 3941,
+      "gitBlobSha": "38b3742232f76911ef02e843090c1ca1d41b5d30"
+    },
+    "SOURCE_BASELINE.json": {
+      "sha256": "d76dab3ccd72d749db0c192763b074689d71c85d97fb45fa76adc13f58dd28e9",
+      "bytes": 659,
+      "gitBlobSha": "86f5bc798d29cf97992ad04f19c7239e16edcb3d"
+    },
+    "config/api.env.example": {
+      "sha256": "00825b38499ae060a01592b1f31225b5c8ed36b8c682a6621e03bfe4d5858a01",
+      "bytes": 263,
+      "gitBlobSha": "93781031530390ed8cf82b01455448007cdabb42"
+    },
+    "contracts/CHECKSUMS.json": {
+      "sha256": "092cf1c460470355ae3272d3771b39482ac45908a14f26d9342120c2c498daad",
+      "bytes": 516,
+      "gitBlobSha": "52835dd8e3f19ae5a5557b20323b3583d88c108f"
+    },
+    "contracts/openapi/M02.yaml": {
+      "sha256": "2d45fddb02f8c6846f94ae0005a67f8072ab3e3e64ce71e1f9bbb2a1a0d21b84",
+      "bytes": 135559,
+      "gitBlobSha": "4e9ad26957e2bd52d1d1992fc0c0ccc74b10407c"
+    },
+    "contracts/project_baseline.json": {
+      "sha256": "abec06133252832b298aaf69931387e2ee101b0f870f4647b8f8b789a1ca7778",
+      "bytes": 264,
+      "gitBlobSha": "fab10f3d56b75b19e65573aafb0325c5e9cda8ec"
+    },
+    "contracts/schema_manifest.json": {
+      "sha256": "ef6bc1eb29ecd5a92d82852b4f1fb073c69877a9a7e93da676978f8500257df3",
+      "bytes": 388,
+      "gitBlobSha": "d838cca40ccd5cb9c0387ac6ba5bf030b897e40e"
+    },
+    "contracts/shared_types.ts": {
+      "sha256": "994aed0dd464d290d3096804db930cca0153e0846fc18116a5afc31eb0cdfaee",
+      "bytes": 15433,
+      "gitBlobSha": "3090db1a3e1ab014043db7f221745c2014284aa4"
+    },
+    "db/migrations/V001__baseline.sql": {
+      "sha256": "64ec33a66c813321d12a7bbc29eff4d3981d6d3f3eacf6fc1eb7f9265efd3c56",
+      "bytes": 81546,
+      "gitBlobSha": "44aaa7fe751b24e52ca3fa426b124f81cc381ff3"
+    },
+    "db/proposals/M02/CR-M02-20261019-001.md": {
+      "sha256": "aa3685f6e82ff3afe83ecbb7e4aaa1a965cf5d8ed39f4586c602b69a735f1a40",
+      "bytes": 1732,
+      "gitBlobSha": "82ea2ac33e7d05b48d49532dcccd3b134a150fdb"
+    },
+    "db/seeds/fixture_ids.json": {
+      "sha256": "f1e73672999dbef94a3b14092417d177c58bd5df840262a79c12416c0947fa11",
+      "bytes": 737,
+      "gitBlobSha": "894fd1819e58b9405cf2ce9d44428124f452dd8d"
+    },
+    "docs/M02/API_GUIDE.md": {
+      "sha256": "362a59c5cfc14601630e28adea91e25689a9ec96e78f6055adeb650be068bb51",
+      "bytes": 13811,
+      "gitBlobSha": "02e22310f728b3f94ce6c2a6b8a3207359234509"
+    },
+    "docs/M02/HANDOFF.md": {
+      "sha256": "92b3f8c6b5dfd335c95c8c7d8207c3c2823df4c601f5157b9d7cda0ceee72cb4",
+      "bytes": 9222,
+      "gitBlobSha": "f60ca91597c1178e9d7a8a15538f446517541761"
+    },
+    "docs/M02/LOCAL_MYSQL_DEPLOYMENT.md": {
+      "sha256": "471eb63218ff7cf3e0c325b99bd08a5789100c8723bd3aad51b06aaa8d7ff790",
+      "bytes": 7039,
+      "gitBlobSha": "eedfa23171c25778873d79dea281dd7a9fedb5f3"
+    },
+    "docs/M02/README.md": {
+      "sha256": "0d89d13584c1ead9846f9f61104fb398dc88529be1b2b0273946277d008d597d",
+      "bytes": 8202,
+      "gitBlobSha": "fe0986a03012e890945fd1b250dad5d89cbb30a6"
+    },
+    "docs/M02/references/00_六人分工与MySQL总契约.md": {
+      "sha256": "5fe1c85ceb005fcf52528d4ac30d54ab125ca8f99f363e11de4ed039a3354621",
+      "bytes": 217825,
+      "gitBlobSha": "cc5b3474f36f041b852598b6d67c11e5b26d4366"
+    },
+    "docs/M02/references/01_数据库中文字段字典.md": {
+      "sha256": "1368ca3f1e8346191ec5144bfb72217174ed61e3d16a3634f3b97f70891fa32c",
+      "bytes": 120631,
+      "gitBlobSha": "f23c7315d44484fd8adf0bbe8ac24074f498108b"
+    },
+    "docs/M02/references/M02_健康记录与个人看板_Agent工作包.md": {
+      "sha256": "b055249b727747c06626dc4ca77eaf170e037881ff71d4912fbf4d85cf5d4fb8",
+      "bytes": 149123,
+      "gitBlobSha": "487a9535405efda7f7b15074eec479cddf66c22e"
+    },
+    "docs/M02/screenshots/dashboard-desktop.png": {
+      "sha256": "6944aa8ecfd861cd84b9c55aa251ecc0b0b494d29b78f630308e8e46d6deaa12",
+      "bytes": 380867,
+      "gitBlobSha": "6e6ac9c7a6fe415fc0f275df6b923a381f90a4ac"
+    },
+    "docs/M02/screenshots/dashboard-mobile.png": {
+      "sha256": "c3b12cb6fc97f7b7da3673dc1c30010cf4d425ac3403689a5ea8b90f1cadcbbb",
+      "bytes": 224426,
+      "gitBlobSha": "30a34e63475dacf53a3314fbb8a95a4022d8f6f9"
+    },
+    "docs/M02/screenshots/optimization/delete-confirmation.jpg": {
+      "sha256": "6043a040dc700f9cefbbb6571384337c69325558699ebd10eca774b38a426a17",
+      "bytes": 39787,
+      "gitBlobSha": "04aabbaa9b16ce6eed0062256f0a6d412c0433d1"
+    },
+    "docs/M02/screenshots/optimization/overview.jpg": {
+      "sha256": "e5ebecdb7143e482f5f0f9ccb84bf89d27639b2fba9868d5cab9f00f0f41b782",
+      "bytes": 130249,
+      "gitBlobSha": "8bb87c4ed4da29c036d93ad81c55f9b1cce6ff83"
+    },
+    "docs/M02/screenshots/optimization/profile.jpg": {
+      "sha256": "8f0643a3196576bdb5c8a3c112855f582761298f91fa0cdbfb6e47fe69499040",
+      "bytes": 48157,
+      "gitBlobSha": "08628c0fec28c3d624fdcc69ccf3e64d2ec76f9e"
+    },
+    "docs/M02/screenshots/optimization/record-date.jpg": {
+      "sha256": "116a3a26002d46b81ebeb6638e0e8ace07a84e43f29d8e9e365994dad8a75614",
+      "bytes": 47741,
+      "gitBlobSha": "5475fd1347df0fb49e521f07db7b9e3d0dcfc76b"
+    },
+    "docs/M02/screenshots/overview-desktop.png": {
+      "sha256": "1c85e2cc0febcf5e4974dcec16e9d344e61d0be71d3d69217889df51470f04ec",
+      "bytes": 188819,
+      "gitBlobSha": "b66db566b733e4d5b3a566924cf16afbda181d7d"
+    },
+    "docs/M02/screenshots/overview-mobile.png": {
+      "sha256": "76095f3401fca072f41bacdd08c8d06ecf6b3db1039e1fff81d0aa4162d1d1c1",
+      "bytes": 165936,
+      "gitBlobSha": "b9b60ee9ca76c2f0b20234a631e6f820eacc1359"
+    },
+    "docs/M02/本轮优化记录.md": {
+      "sha256": "e5769dad7577a24c8fb7a368e0694844307b58f482b05aac64ae153faee3ac7d",
+      "bytes": 1933,
+      "gitBlobSha": "bf6508e03c100160ef27425f433c5ea9a430892e"
+    },
+    "docs/M02/项目创建与差异清单.md": {
+      "sha256": "bcb586b5577b1d8373d786f8a3975f060cbd035ed07e0891e084eff9696382a5",
+      "bytes": 3480,
+      "gitBlobSha": "6fe92c2fa31cb24cd38b5f4c3a3478f20e0cb4ae"
+    },
+    "server/src/modules/health/errors.ts": {
+      "sha256": "b85a7eea5c9f3b3fcfd1ccb8bcb5fbc979bce7c89172661e89bb80fc02126d09",
+      "bytes": 359,
+      "gitBlobSha": "91153221192c5d8a6210e95b45dd1a676b545c47"
+    },
+    "server/src/modules/health/health.module.ts": {
+      "sha256": "d2722fcde124c12146c86fe002c0e2f5bab328e8f34799b9e3cf20841c704445",
+      "bytes": 3557,
+      "gitBlobSha": "2570815ce406e99433b97ecffd35e0cfbf6b808f"
+    },
+    "server/src/modules/health/http.ts": {
+      "sha256": "50eb501ec06f688aad65ebfef6c100dddc201046f47eead017efaef3e612d80d",
+      "bytes": 4318,
+      "gitBlobSha": "ae704efe528826792bcd297b5ca0ded93de92470"
+    },
+    "server/src/modules/health/repository.ts": {
+      "sha256": "3416ab1e063d1572708414b5ae1a3ef4c34c1cd1c4b4828977dacf1c350254b7",
+      "bytes": 7998,
+      "gitBlobSha": "35ec635b244f57f1ab85df8d775192dd8426d254"
+    },
+    "server/src/modules/health/service.ts": {
+      "sha256": "278644d8c656e99e5662d15892b48db1f3fa63ff9c90d923b552497e71ec60de",
+      "bytes": 13164,
+      "gitBlobSha": "8b314cf8da8aa1de29f98da2f1b4a0999c8f0b1b"
+    },
+    "server/src/modules/health/validation.ts": {
+      "sha256": "66cf6e6dff39d31291085f6e9ab695ebfb427bf1c5bdcb525b02b4679055c580",
+      "bytes": 4502,
+      "gitBlobSha": "91a30721025131c279d9d9be8e59dc043ebcbb4d"
+    },
+    "tests/m02-aggregation.test.ts": {
+      "sha256": "63995263fca27b46c201fed4cfaed02ec93dcc092bd622549cf873dbb48a604b",
+      "bytes": 3509,
+      "gitBlobSha": "8365dc3f98c99b659abe5c11b69e5b21aa42e5d6"
+    },
+    "tests/m02-validation.test.ts": {
+      "sha256": "1d9aff25da594e301318af20c325841f46c47f11c53bf85ffe3e29b55b93b238",
+      "bytes": 2193,
+      "gitBlobSha": "d7668446297ec2b0bd4c8b20ab485a1f52783bb3"
+    },
+    "tools/check_m02_contract.py": {
+      "sha256": "82571df5b6c34bdd2b5e2aa7b0aae15268b972eb28baf2703f507d95a23b1f0b",
+      "bytes": 1925,
+      "gitBlobSha": "603c8df260297cd813a7121380976341ce4315a0"
+    },
+    "tools/m02-dev/generate-openapi.py": {
+      "sha256": "bfa06cfc531182de0864a8f0369a0c17860bc3b6af87dc5c1fc25a2f187bab9b",
+      "bytes": 8996,
+      "gitBlobSha": "55d6fb01fd6eec55e5d6d5b5ccf92a05650b4961"
+    },
+    "tools/m02-dev/main.ts": {
+      "sha256": "d0f02d9fdd741b11c38f10715c84e6c036462c236a0dfc2d46276ad7928d8f56",
+      "bytes": 5180,
+      "gitBlobSha": "9fc75c438e664a986ae528a5bb9e0d8e55f40c79"
+    },
+    "tools/m02-dev/mysql-acceptance.ts": {
+      "sha256": "3161f1df98fa0f287f4fdbe606e8d6d4641479bd42b484eabf2f408995a07d51",
+      "bytes": 8482,
+      "gitBlobSha": "9b7c261fb5a33c562d7a692ce0e23e9ed7b8dff3"
+    },
+    "tools/m02-dev/mysql.ts": {
+      "sha256": "8cd332b2db952723a337b427698f1f4cbb897f7a13d0e6f91a7f221c4f5762fb",
+      "bytes": 10881,
+      "gitBlobSha": "ac201f954ccc9edf0d05b6020353a49770fb1790"
+    },
+    "tools/m02-dev/openapi_details.py": {
+      "sha256": "18a0e04946d1ab7d5e929918129fd57a722ec5c6bcc9523d4eccbcf05d9bedd7",
+      "bytes": 14862,
+      "gitBlobSha": "3f53b5a1972a5dc2f3cf02a8536bcf8656e0a7f5"
+    },
+    "tools/m02-dev/package-lock.json": {
+      "sha256": "97aebf7bf923404c316ecba8241d3416509d77995b42fe1f6a8095adc36953e0",
+      "bytes": 69030,
+      "gitBlobSha": "dd16d0d9497d78b994dbb0e237799460f13df238"
+    },
+    "tools/m02-dev/package.json": {
+      "sha256": "aaed6e885378343e3e57e1afe44a15ba71cd656d8562cb2b94eb3fafaea2d6e2",
+      "bytes": 547,
+      "gitBlobSha": "b6bf7cce74cc7366ff062ced6fb5a62bddca09de"
+    },
+    "tools/m02-dev/ports.ts": {
+      "sha256": "79e958a3f34b0d8c2751f8b22e02a664a368126b95261efb4fc9831582117a43",
+      "bytes": 4479,
+      "gitBlobSha": "95d87c6e9a1dc74a41c6d6959ee8642c5b2a1086"
+    },
+    "tools/m02-dev/reset-fixtures.ts": {
+      "sha256": "9f863b95d38a275704ef0ed408468a7925951a7cce822a9ea3c9651591334ef4",
+      "bytes": 1014,
+      "gitBlobSha": "0fb3c8b15b50281381bce7f9576cfc656d14abbd"
+    },
+    "tools/m02-dev/setup.mjs": {
+      "sha256": "4fec0644a3b6ad9f15b2dce3238e28bdda1d0ed251a6a7bc0ca103af883bbbf1",
+      "bytes": 1868,
+      "gitBlobSha": "ce198820eaa792b62530c9037138bd4c3f88e662"
+    },
+    "tools/package_m02.py": {
+      "sha256": "47eed214cee4167d279105ed201f326a11b8f81e51e165476cda5668e2275563",
+      "bytes": 1313,
+      "gitBlobSha": "737571aa5429a0aa31610d502388d75f939bfe2e"
+    },
+    "tools/prepare_github_source.py": {
+      "sha256": "c4d97ce9067f17a007348d3fb318825cbd7f119ae62a5370be6626ee9da1626e",
+      "bytes": 1269,
+      "gitBlobSha": "3e41eec10c2bcafe374a9e4c00eaa6f813275e41"
+    },
+    "vitest.config.ts": {
+      "sha256": "a0f7c1e0fc8c4803cc4ac9bed783bee5f64b7c37adc0a3232fe4ed623e62c839",
+      "bytes": 119,
+      "gitBlobSha": "6e31b00e3c8e8fc94372468d872ea7e7b3d920f9"
+    },
+    "ORIGINAL_README.md": {
+      "sha256": "c6a34b3b27fd0b4232c3c1d15bc2f1f3b4fb078ba3ed06629b095e1387ce931c",
+      "bytes": 5002,
+      "gitBlobSha": "c521cdb1b317e00a6282554eab39a954278e7680"
+    }
+  }
+}
