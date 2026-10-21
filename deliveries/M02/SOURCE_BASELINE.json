@@ -1,0 +1,15 @@
+{
+  "module": "M02",
+  "contract": "QY-MYSQL-1.0.0",
+  "repository": "https://github.com/Mat11-oo/qingyang-health-m02",
+  "upstream": "https://github.com/guojunyu12/qingyang-health-frontend",
+  "upstreamCommit": "7edf70467eb36d537702430881a5d5a153001ecc",
+  "schemaSha256": "64ec33a66c813321d12a7bbc29eff4d3981d6d3f3eacf6fc1eb7f9265efd3c56",
+  "layout": {
+    "frontend": "src/",
+    "backend": "server/src/modules/health/",
+    "contracts": "contracts/",
+    "database": "db/"
+  },
+  "note": "Only M02 is implemented against the MySQL contract; other original frontend modules remain demo pages. Cross-module production adapters require team integration."
+}

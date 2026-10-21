@@ -1,0 +1,4033 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "轻养 M02 健康记录与个人看板",
+    "version": "QY-MYSQL-1.0.0",
+    "description": "10 个接口；共享身份、幂等、CSRF 与 envelope 由 M01 装配。仅 M02 三张健康表。\n所有业务请求携带 X-Client-Platform: h5；写请求携带 CSRF，POST 使用 UUID v4 幂等键。\n示例全部为文档构造数据，不代表数据库中的用户或记录。示例日期为 2026-10-20，实际调用按服务端上海业务日计算。\n正式 Cookie 名称和 CSRF 获取流程待 M01 统一确认；本地测试会话只用于显式开发配置。"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/me/dashboard": {
+      "get": {
+        "operationId": "getDashboard",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Dashboard"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                },
+                "examples": {
+                  "documentExample": {
+                    "summary": "构造的契约示例；非数据库实测值",
+                    "value": {
+                      "data": {
+                        "date": "2026-10-20",
+                        "isDemo": false,
+                        "water": {
+                          "totalMl": 0,
+                          "targetMl": null,
+                          "progress": null
+                        },
+                        "weight": {
+                          "latestKg": null,
+                          "targetKg": null,
+                          "previousKg": null,
+                          "changeKg": null,
+                          "bmi": null
+                        },
+                        "energy": {
+                          "intakeKcal": 0,
+                          "exerciseKcal": 0,
+                          "baseTargetKcal": null,
+                          "effectiveTargetKcal": null,
+                          "remainingKcal": null,
+                          "exceededKcal": null
+                        },
+                        "nutrients": {
+                          "carbs": {
+                            "consumedG": 0,
+                            "targetG": null,
+                            "complete": true
+                          },
+                          "protein": {
+                            "consumedG": 0,
+                            "targetG": null,
+                            "complete": true
+                          },
+                          "fat": {
+                            "consumedG": 0,
+                            "targetG": null,
+                            "complete": true
+                          }
+                        },
+                        "week": [
+                          {
+                            "date": "2026-10-14",
+                            "hasMealRecord": false,
+                            "hasTrainingRecord": false
+                          },
+                          {
+                            "date": "2026-10-15",
+                            "hasMealRecord": false,
+                            "hasTrainingRecord": false
+                          },
+                          {
+                            "date": "2026-10-16",
+                            "hasMealRecord": false,
+                            "hasTrainingRecord": false
+                          },
+                          {
+                            "date": "2026-10-17",
+                            "hasMealRecord": false,
+                            "hasTrainingRecord": false
+                          },
+                          {
+                            "date": "2026-10-18",
+                            "hasMealRecord": false,
+                            "hasTrainingRecord": false
+                          },
+                          {
+                            "date": "2026-10-19",
+                            "hasMealRecord": false,
+                            "hasTrainingRecord": false
+                          },
+                          {
+                            "date": "2026-10-20",
+                            "hasMealRecord": false,
+                            "hasTrainingRecord": false
+                          }
+                        ],
+                        "latestMeal": null,
+                        "recommendedWorkout": null,
+                        "pointsBalance": 0,
+                        "dailyTasks": [],
+                        "generatedAt": "2026-10-20T02:00:00.000Z"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z",
+                        "timezone": "Asia/Shanghai"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "未登录、会话过期或账号不可用。",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHENTICATED",
+                        "message": "未登录、会话过期或账号不可用。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "summary": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                        "fields": {
+                          "query": "请按接口声明提供合法字段。"
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "未识别的服务端异常；业务事务不提交部分结果。",
+                    "value": {
+                      "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "未识别的服务端异常；业务事务不提交部分结果。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Client-Platform",
+            "in": "header",
+            "required": true,
+            "description": "00 总契约规定的 H5 通用请求头，由 M01 公共入口按统一规则处理。",
+            "schema": {
+              "type": "string",
+              "const": "h5"
+            },
+            "example": "h5"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-10-20",
+            "description": "YYYY-MM-DD，按 Asia/Shanghai 业务日期解释。省略时使用当前上海业务日。"
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "Asia/Shanghai"
+            },
+            "example": "Asia/Shanghai"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "查询今日或指定上海日期的个人看板",
+        "description": "date 省略时为当前上海业务日。历史页面使用当前目标；缺目标相关项为 null。同一只读快照读取跨组端口。 未声明的业务 Body/Query 字段返回 422；身份仅取自服务端会话。",
+        "x-error-codes": [
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401,
+            "when": "未登录、会话过期或账号不可用。",
+            "owner": "M01 身份 / M02 身份检查"
+          },
+          {
+            "code": "VALIDATION_ERROR",
+            "status": 422,
+            "when": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+            "owner": "M02 / 公共命令执行器"
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "when": "未识别的服务端异常；业务事务不提交部分结果。",
+            "owner": "M02 错误适配"
+          }
+        ]
+      }
+    },
+    "/me/health-profile": {
+      "get": {
+        "operationId": "getHealthProfile",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/HealthProfile"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                },
+                "examples": {
+                  "documentExample": {
+                    "summary": "构造的契约示例；非数据库实测值",
+                    "value": {
+                      "data": null,
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z",
+                        "timezone": "Asia/Shanghai"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "未登录、会话过期或账号不可用。",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHENTICATED",
+                        "message": "未登录、会话过期或账号不可用。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "summary": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                        "fields": {
+                          "query": "请按接口声明提供合法字段。"
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "未识别的服务端异常；业务事务不提交部分结果。",
+                    "value": {
+                      "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "未识别的服务端异常；业务事务不提交部分结果。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Client-Platform",
+            "in": "header",
+            "required": true,
+            "description": "00 总契约规定的 H5 通用请求头，由 M01 公共入口按统一规则处理。",
+            "schema": {
+              "type": "string",
+              "const": "h5"
+            },
+            "example": "h5"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "查询本人健康档案",
+        "description": "无档案时 200 且 data:null，不生成默认目标。此接口不接受查询参数。 未声明的业务 Body/Query 字段返回 422；身份仅取自服务端会话。",
+        "x-error-codes": [
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401,
+            "when": "未登录、会话过期或账号不可用。",
+            "owner": "M01 身份 / M02 身份检查"
+          },
+          {
+            "code": "VALIDATION_ERROR",
+            "status": 422,
+            "when": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+            "owner": "M02 / 公共命令执行器"
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "when": "未识别的服务端异常；业务事务不提交部分结果。",
+            "owner": "M02 错误适配"
+          }
+        ]
+      },
+      "put": {
+        "operationId": "putHealthProfile",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/HealthProfile"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                },
+                "examples": {
+                  "documentExample": {
+                    "summary": "构造的契约示例；非数据库实测值",
+                    "value": {
+                      "data": {
+                        "id": "e1000000-0000-4000-8000-000000000001",
+                        "userId": "a0000000-0000-4000-8000-000000000001",
+                        "heightCm": null,
+                        "birthYear": null,
+                        "targetWeightKg": 60,
+                        "waterTargetMl": 2000,
+                        "calorieTargetKcal": 1800,
+                        "goalType": "balanced",
+                        "version": 1,
+                        "carbsTargetG": null,
+                        "proteinTargetG": null,
+                        "fatTargetG": null,
+                        "updatedAt": "2026-10-20T02:00:00.000Z"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z",
+                        "timezone": "Asia/Shanghai"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "未登录、会话过期或账号不可用。",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHENTICATED",
+                        "message": "未登录、会话过期或账号不可用。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CSRF_INVALID": {
+                    "summary": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。",
+                    "value": {
+                      "error": {
+                        "code": "CSRF_INVALID",
+                        "message": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VERSION_CONFLICT": {
+                    "summary": "首次档案已被创建，或提交的 version 已过期。",
+                    "value": {
+                      "error": {
+                        "code": "VERSION_CONFLICT",
+                        "message": "首次档案已被创建，或提交的 version 已过期。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "summary": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                        "fields": {
+                          "body": "请按接口声明提供合法字段。"
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "未识别的服务端异常；业务事务不提交部分结果。",
+                    "value": {
+                      "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "未识别的服务端异常；业务事务不提交部分结果。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Client-Platform",
+            "in": "header",
+            "required": true,
+            "description": "00 总契约规定的 H5 通用请求头，由 M01 公共入口按统一规则处理。",
+            "schema": {
+              "type": "string",
+              "const": "h5"
+            },
+            "example": "h5"
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+              "maxLength": 1500
+            },
+            "description": "当前会话对应的 CSRF 令牌；由 M01 获取/刷新。本地测试通过 /dev/session 返回，仅用于开发。"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthProfileInput"
+              },
+              "examples": {
+                "minimalInput": {
+                  "summary": "最小合法请求；目标值仅为用户主动选择的示例",
+                  "value": {
+                    "targetWeightKg": 60,
+                    "waterTargetMl": 2000,
+                    "calorieTargetKcal": 1800,
+                    "goalType": "balanced",
+                    "version": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "完整保存本人健康档案",
+        "description": "完整 PUT：五个必填字段必须提供；可选字段省略或传 null 都保存为 null。首次创建 version=0，创建后为 1；更新携带最新 version，冲突返回 409 VERSION_CONFLICT。小数项最多一位小数。不得发送 id、userId、updatedAt 或其他未声明字段。 未声明的业务 Body/Query 字段返回 422；身份仅取自服务端会话。",
+        "x-error-codes": [
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401,
+            "when": "未登录、会话过期或账号不可用。",
+            "owner": "M01 身份 / M02 身份检查"
+          },
+          {
+            "code": "VALIDATION_ERROR",
+            "status": 422,
+            "when": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+            "owner": "M02 / 公共命令执行器"
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "when": "未识别的服务端异常；业务事务不提交部分结果。",
+            "owner": "M02 错误适配"
+          },
+          {
+            "code": "CSRF_INVALID",
+            "status": 403,
+            "when": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。",
+            "owner": "M01；本地为测试命令执行器"
+          },
+          {
+            "code": "VERSION_CONFLICT",
+            "status": 409,
+            "when": "首次档案已被创建，或提交的 version 已过期。",
+            "owner": "M02"
+          }
+        ]
+      }
+    },
+    "/me/health/overview": {
+      "get": {
+        "operationId": "getOverview",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Overview"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                },
+                "examples": {
+                  "documentExample": {
+                    "summary": "构造的契约示例；非数据库实测值",
+                    "value": {
+                      "data": {
+                        "range": 7,
+                        "startDate": "2026-10-14",
+                        "endDate": "2026-10-20",
+                        "generatedAt": "2026-10-20T02:00:00.000Z",
+                        "summary": {
+                          "avgIntakeKcal": null,
+                          "avgWaterMl": null,
+                          "completedWorkouts": 0,
+                          "totalExerciseKcal": 0,
+                          "latestWeightKg": null,
+                          "moodRecordedDays": 0,
+                          "pointsBalance": 0,
+                          "activeBookings": 0
+                        },
+                        "series": [
+                          {
+                            "date": "2026-10-14",
+                            "intakeKcal": 0,
+                            "exerciseKcal": 0,
+                            "waterMl": 0,
+                            "weightKg": null,
+                            "mood": null,
+                            "completedWorkouts": 0,
+                            "hasMealRecord": false,
+                            "hasWaterRecord": false
+                          },
+                          {
+                            "date": "2026-10-15",
+                            "intakeKcal": 0,
+                            "exerciseKcal": 0,
+                            "waterMl": 0,
+                            "weightKg": null,
+                            "mood": null,
+                            "completedWorkouts": 0,
+                            "hasMealRecord": false,
+                            "hasWaterRecord": false
+                          },
+                          {
+                            "date": "2026-10-16",
+                            "intakeKcal": 0,
+                            "exerciseKcal": 0,
+                            "waterMl": 0,
+                            "weightKg": null,
+                            "mood": null,
+                            "completedWorkouts": 0,
+                            "hasMealRecord": false,
+                            "hasWaterRecord": false
+                          },
+                          {
+                            "date": "2026-10-17",
+                            "intakeKcal": 0,
+                            "exerciseKcal": 0,
+                            "waterMl": 0,
+                            "weightKg": null,
+                            "mood": null,
+                            "completedWorkouts": 0,
+                            "hasMealRecord": false,
+                            "hasWaterRecord": false
+                          },
+                          {
+                            "date": "2026-10-18",
+                            "intakeKcal": 0,
+                            "exerciseKcal": 0,
+                            "waterMl": 0,
+                            "weightKg": null,
+                            "mood": null,
+                            "completedWorkouts": 0,
+                            "hasMealRecord": false,
+                            "hasWaterRecord": false
+                          },
+                          {
+                            "date": "2026-10-19",
+                            "intakeKcal": 0,
+                            "exerciseKcal": 0,
+                            "waterMl": 0,
+                            "weightKg": null,
+                            "mood": null,
+                            "completedWorkouts": 0,
+                            "hasMealRecord": false,
+                            "hasWaterRecord": false
+                          },
+                          {
+                            "date": "2026-10-20",
+                            "intakeKcal": 0,
+                            "exerciseKcal": 0,
+                            "waterMl": 0,
+                            "weightKg": null,
+                            "mood": null,
+                            "completedWorkouts": 0,
+                            "hasMealRecord": false,
+                            "hasWaterRecord": false
+                          }
+                        ],
+                        "coverage": {
+                          "mealDays": 0,
+                          "waterDays": 0,
+                          "weightDays": 0,
+                          "moodDays": 0,
+                          "rangeDays": 7
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z",
+                        "timezone": "Asia/Shanghai"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "未登录、会话过期或账号不可用。",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHENTICATED",
+                        "message": "未登录、会话过期或账号不可用。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "summary": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                        "fields": {
+                          "query": "请按接口声明提供合法字段。"
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "未识别的服务端异常；业务事务不提交部分结果。",
+                    "value": {
+                      "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "未识别的服务端异常；业务事务不提交部分结果。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Client-Platform",
+            "in": "header",
+            "required": true,
+            "description": "00 总契约规定的 H5 通用请求头，由 M01 公共入口按统一规则处理。",
+            "schema": {
+              "type": "string",
+              "const": "h5"
+            },
+            "example": "h5"
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                7,
+                30
+              ],
+              "default": 7
+            },
+            "example": 7
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-10-20",
+            "description": "YYYY-MM-DD，按 Asia/Shanghai 业务日期解释。省略时使用当前上海业务日。"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "查询近 7/30 天个人大屏",
+        "description": "range 默认 7，endDate 默认当前上海日期。日期连续且包含结束日；缺体重/心情为 null，平均值按该类实际有记录天数计算。 未声明的业务 Body/Query 字段返回 422；身份仅取自服务端会话。",
+        "x-error-codes": [
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401,
+            "when": "未登录、会话过期或账号不可用。",
+            "owner": "M01 身份 / M02 身份检查"
+          },
+          {
+            "code": "VALIDATION_ERROR",
+            "status": 422,
+            "when": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+            "owner": "M02 / 公共命令执行器"
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "when": "未识别的服务端异常；业务事务不提交部分结果。",
+            "owner": "M02 错误适配"
+          }
+        ]
+      }
+    },
+    "/me/water-records": {
+      "get": {
+        "operationId": "listWaterRecords",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/WaterPage"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                },
+                "examples": {
+                  "documentExample": {
+                    "summary": "构造的契约示例；非数据库实测值",
+                    "value": {
+                      "data": {
+                        "items": [
+                          {
+                            "id": "e2000000-0000-4000-8000-000000000001",
+                            "amountMl": 250,
+                            "recordedAt": "2026-10-20T02:00:00.000Z",
+                            "businessDate": "2026-10-20",
+                            "source": "manual"
+                          }
+                        ],
+                        "nextCursor": null
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z",
+                        "timezone": "Asia/Shanghai"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "未登录、会话过期或账号不可用。",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHENTICATED",
+                        "message": "未登录、会话过期或账号不可用。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "summary": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                        "fields": {
+                          "query": "请按接口声明提供合法字段。"
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "未识别的服务端异常；业务事务不提交部分结果。",
+                    "value": {
+                      "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "未识别的服务端异常；业务事务不提交部分结果。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Client-Platform",
+            "in": "header",
+            "required": true,
+            "description": "00 总契约规定的 H5 通用请求头，由 M01 公共入口按统一规则处理。",
+            "schema": {
+              "type": "string",
+              "const": "h5"
+            },
+            "example": "h5"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-10-20",
+            "description": "YYYY-MM-DD，按 Asia/Shanghai 业务日期解释。"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+              "maxLength": 1500
+            },
+            "description": "原样使用上页 nextCursor，不自行解码/拼接；绑定用户、记录类型和日期筛选，变更后必须清空。null 时不再请求下一页。"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "分页查询指定日饮水记录",
+        "description": "date 必填，按上海业务日筛选。limit 默认 20，范围 1—100。排序及游标规则见 WaterPage。 未声明的业务 Body/Query 字段返回 422；身份仅取自服务端会话。",
+        "x-error-codes": [
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401,
+            "when": "未登录、会话过期或账号不可用。",
+            "owner": "M01 身份 / M02 身份检查"
+          },
+          {
+            "code": "VALIDATION_ERROR",
+            "status": 422,
+            "when": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+            "owner": "M02 / 公共命令执行器"
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "when": "未识别的服务端异常；业务事务不提交部分结果。",
+            "owner": "M02 错误适配"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createWaterRecord",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CreateWaterResult"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                },
+                "examples": {
+                  "documentExample": {
+                    "summary": "构造的契约示例；非数据库实测值",
+                    "value": {
+                      "data": {
+                        "record": {
+                          "id": "e2000000-0000-4000-8000-000000000001",
+                          "amountMl": 250,
+                          "recordedAt": "2026-10-20T02:00:00.000Z",
+                          "businessDate": "2026-10-20",
+                          "source": "manual"
+                        },
+                        "todaySummary": {
+                          "totalMl": 250,
+                          "targetMl": 2000,
+                          "progress": 0.125
+                        },
+                        "awards": [
+                          {
+                            "id": "e4000000-0000-4000-8000-000000000001",
+                            "taskCode": "daily_water",
+                            "points": 5,
+                            "businessDate": "2026-10-20",
+                            "scopeKey": ""
+                          }
+                        ]
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z",
+                        "timezone": "Asia/Shanghai"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "未登录、会话过期或账号不可用。",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHENTICATED",
+                        "message": "未登录、会话过期或账号不可用。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CSRF_INVALID": {
+                    "summary": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。",
+                    "value": {
+                      "error": {
+                        "code": "CSRF_INVALID",
+                        "message": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "IDEMPOTENCY_CONFLICT": {
+                    "summary": "同一用户、方法、路径及幂等键对应不同请求体。",
+                    "value": {
+                      "error": {
+                        "code": "IDEMPOTENCY_CONFLICT",
+                        "message": "同一用户、方法、路径及幂等键对应不同请求体。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  },
+                  "REQUEST_IN_PROGRESS": {
+                    "summary": "同 key 的处理租约仍有效，或原执行者租约失效。稍后按原 key / 请求体重试。",
+                    "value": {
+                      "error": {
+                        "code": "REQUEST_IN_PROGRESS",
+                        "message": "同 key 的处理租约仍有效，或原执行者租约失效。稍后按原 key / 请求体重试。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  },
+                  "WATER_DAILY_LIMIT": {
+                    "summary": "新增后该上海业务日的未删饮水记录累计将超过 6000 ml。",
+                    "value": {
+                      "error": {
+                        "code": "WATER_DAILY_LIMIT",
+                        "message": "新增后该上海业务日的未删饮水记录累计将超过 6000 ml。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "summary": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                        "fields": {
+                          "body": "请按接口声明提供合法字段。"
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "未识别的服务端异常；业务事务不提交部分结果。",
+                    "value": {
+                      "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "未识别的服务端异常；业务事务不提交部分结果。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Client-Platform",
+            "in": "header",
+            "required": true,
+            "description": "00 总契约规定的 H5 通用请求头，由 M01 公共入口按统一规则处理。",
+            "schema": {
+              "type": "string",
+              "const": "h5"
+            },
+            "example": "h5"
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+              "maxLength": 1500
+            },
+            "description": "当前会话对应的 CSRF 令牌；由 M01 获取/刷新。本地测试通过 /dev/session 返回，仅用于开发。"
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            },
+            "example": "e5000000-0000-4000-8000-000000000001",
+            "description": "小写 UUID v4。同一操作重试沿用同一 key 和原请求体；主动再记录一次生成新 key。"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaterInput"
+              },
+              "examples": {
+                "minimalInput": {
+                  "summary": "最小合法请求；目标值仅为用户主动选择的示例",
+                  "value": {
+                    "amountMl": 250
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "新增一条独立饮水记录",
+        "description": "每笔 1—1000 ml 整数；在用户锁内检查选中业务日有效累计不超过 6000 ml，此为录入边界。当天首次奖励由 M05 同事务处理；主动第二杯换新 key，网络重试沿用原 key 和原请求体。 未声明的业务 Body/Query 字段返回 422；身份仅取自服务端会话。",
+        "x-error-codes": [
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401,
+            "when": "未登录、会话过期或账号不可用。",
+            "owner": "M01 身份 / M02 身份检查"
+          },
+          {
+            "code": "VALIDATION_ERROR",
+            "status": 422,
+            "when": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+            "owner": "M02 / 公共命令执行器"
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "when": "未识别的服务端异常；业务事务不提交部分结果。",
+            "owner": "M02 错误适配"
+          },
+          {
+            "code": "CSRF_INVALID",
+            "status": 403,
+            "when": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。",
+            "owner": "M01；本地为测试命令执行器"
+          },
+          {
+            "code": "IDEMPOTENCY_CONFLICT",
+            "status": 409,
+            "when": "同一用户、方法、路径及幂等键对应不同请求体。",
+            "owner": "M01；本地为测试命令执行器"
+          },
+          {
+            "code": "REQUEST_IN_PROGRESS",
+            "status": 409,
+            "when": "同 key 的处理租约仍有效，或原执行者租约失效。稍后按原 key / 请求体重试。",
+            "owner": "M01；本地为测试命令执行器"
+          },
+          {
+            "code": "WATER_DAILY_LIMIT",
+            "status": 409,
+            "when": "新增后该上海业务日的未删饮水记录累计将超过 6000 ml。",
+            "owner": "M02"
+          }
+        ]
+      }
+    },
+    "/me/water-records/{id}": {
+      "delete": {
+        "operationId": "deleteWaterRecord",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "204": {
+            "description": "删除成功或本人重复删除；响应体为空，不返回 JSON。"
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "未登录、会话过期或账号不可用。",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHENTICATED",
+                        "message": "未登录、会话过期或账号不可用。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CSRF_INVALID": {
+                    "summary": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。",
+                    "value": {
+                      "error": {
+                        "code": "CSRF_INVALID",
+                        "message": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "要删除的记录不存在或不属于当前用户。",
+                    "value": {
+                      "error": {
+                        "code": "NOT_FOUND",
+                        "message": "要删除的记录不存在或不属于当前用户。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "summary": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                        "fields": {
+                          "body": "请按接口声明提供合法字段。"
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "未识别的服务端异常；业务事务不提交部分结果。",
+                    "value": {
+                      "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "未识别的服务端异常；业务事务不提交部分结果。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Client-Platform",
+            "in": "header",
+            "required": true,
+            "description": "00 总契约规定的 H5 通用请求头，由 M01 公共入口按统一规则处理。",
+            "schema": {
+              "type": "string",
+              "const": "h5"
+            },
+            "example": "h5"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            },
+            "example": "e2000000-0000-4000-8000-000000000001"
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+              "maxLength": 1500
+            },
+            "description": "当前会话对应的 CSRF 令牌；由 M01 获取/刷新。本地测试通过 /dev/session 返回，仅用于开发。"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "软删除本人饮水记录",
+        "description": "有效小写 UUID v4。本人重复删除均为 204，无响应体；他人或不存在记录为 404。删除不回收原奖励，也不恢复当日领奖资格。 未声明的业务 Body/Query 字段返回 422；身份仅取自服务端会话。",
+        "x-error-codes": [
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401,
+            "when": "未登录、会话过期或账号不可用。",
+            "owner": "M01 身份 / M02 身份检查"
+          },
+          {
+            "code": "VALIDATION_ERROR",
+            "status": 422,
+            "when": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+            "owner": "M02 / 公共命令执行器"
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "when": "未识别的服务端异常；业务事务不提交部分结果。",
+            "owner": "M02 错误适配"
+          },
+          {
+            "code": "CSRF_INVALID",
+            "status": 403,
+            "when": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。",
+            "owner": "M01；本地为测试命令执行器"
+          },
+          {
+            "code": "NOT_FOUND",
+            "status": 404,
+            "when": "要删除的记录不存在或不属于当前用户。",
+            "owner": "M02"
+          }
+        ]
+      }
+    },
+    "/me/weight-records": {
+      "get": {
+        "operationId": "listWeightRecords",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/WeightPage"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                },
+                "examples": {
+                  "documentExample": {
+                    "summary": "构造的契约示例；非数据库实测值",
+                    "value": {
+                      "data": {
+                        "items": [
+                          {
+                            "id": "e3000000-0000-4000-8000-000000000001",
+                            "weightKg": 60.5,
+                            "recordedAt": "2026-10-20T02:00:00.000Z",
+                            "businessDate": "2026-10-20",
+                            "source": "manual"
+                          }
+                        ],
+                        "nextCursor": null
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z",
+                        "timezone": "Asia/Shanghai"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "未登录、会话过期或账号不可用。",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHENTICATED",
+                        "message": "未登录、会话过期或账号不可用。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "summary": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                        "fields": {
+                          "query": "请按接口声明提供合法字段。"
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "未识别的服务端异常；业务事务不提交部分结果。",
+                    "value": {
+                      "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "未识别的服务端异常；业务事务不提交部分结果。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Client-Platform",
+            "in": "header",
+            "required": true,
+            "description": "00 总契约规定的 H5 通用请求头，由 M01 公共入口按统一规则处理。",
+            "schema": {
+              "type": "string",
+              "const": "h5"
+            },
+            "example": "h5"
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-10-14",
+            "description": "YYYY-MM-DD，按 Asia/Shanghai 业务日期解释。"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-10-20",
+            "description": "YYYY-MM-DD，按 Asia/Shanghai 业务日期解释。"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+              "maxLength": 1500
+            },
+            "description": "原样使用上页 nextCursor，不自行解码/拼接；绑定用户、记录类型和日期筛选，变更后必须清空。null 时不再请求下一页。"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "分页查询体重历史",
+        "description": "startDate/endDate 必填，均含端点；结束不早于开始，最多 366 个自然日期（日期差不超过 365 天）。按 recordedAt、id 倒序，排除软删。 未声明的业务 Body/Query 字段返回 422；身份仅取自服务端会话。",
+        "x-error-codes": [
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401,
+            "when": "未登录、会话过期或账号不可用。",
+            "owner": "M01 身份 / M02 身份检查"
+          },
+          {
+            "code": "VALIDATION_ERROR",
+            "status": 422,
+            "when": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+            "owner": "M02 / 公共命令执行器"
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "when": "未识别的服务端异常；业务事务不提交部分结果。",
+            "owner": "M02 错误适配"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createWeightRecord",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/WeightRecord"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                },
+                "examples": {
+                  "documentExample": {
+                    "summary": "构造的契约示例；非数据库实测值",
+                    "value": {
+                      "data": {
+                        "id": "e3000000-0000-4000-8000-000000000001",
+                        "weightKg": 60.5,
+                        "recordedAt": "2026-10-20T02:00:00.000Z",
+                        "businessDate": "2026-10-20",
+                        "source": "manual"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z",
+                        "timezone": "Asia/Shanghai"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "未登录、会话过期或账号不可用。",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHENTICATED",
+                        "message": "未登录、会话过期或账号不可用。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CSRF_INVALID": {
+                    "summary": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。",
+                    "value": {
+                      "error": {
+                        "code": "CSRF_INVALID",
+                        "message": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "IDEMPOTENCY_CONFLICT": {
+                    "summary": "同一用户、方法、路径及幂等键对应不同请求体。",
+                    "value": {
+                      "error": {
+                        "code": "IDEMPOTENCY_CONFLICT",
+                        "message": "同一用户、方法、路径及幂等键对应不同请求体。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  },
+                  "REQUEST_IN_PROGRESS": {
+                    "summary": "同 key 的处理租约仍有效，或原执行者租约失效。稍后按原 key / 请求体重试。",
+                    "value": {
+                      "error": {
+                        "code": "REQUEST_IN_PROGRESS",
+                        "message": "同 key 的处理租约仍有效，或原执行者租约失效。稍后按原 key / 请求体重试。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "summary": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                        "fields": {
+                          "body": "请按接口声明提供合法字段。"
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "未识别的服务端异常；业务事务不提交部分结果。",
+                    "value": {
+                      "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "未识别的服务端异常；业务事务不提交部分结果。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Client-Platform",
+            "in": "header",
+            "required": true,
+            "description": "00 总契约规定的 H5 通用请求头，由 M01 公共入口按统一规则处理。",
+            "schema": {
+              "type": "string",
+              "const": "h5"
+            },
+            "example": "h5"
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+              "maxLength": 1500
+            },
+            "description": "当前会话对应的 CSRF 令牌；由 M01 获取/刷新。本地测试通过 /dev/session 返回，仅用于开发。"
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            },
+            "example": "e5000000-0000-4000-8000-000000000001",
+            "description": "小写 UUID v4。同一操作重试沿用同一 key 和原请求体；主动再记录一次生成新 key。"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeightInput"
+              },
+              "examples": {
+                "minimalInput": {
+                  "summary": "最小合法请求；目标值仅为用户主动选择的示例",
+                  "value": {
+                    "weightKg": 60.5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "新增一次体重测量",
+        "description": "20—350 kg，最多一位小数。同日可多次。相同时间戳以 id 排序；允许的记录时间见 WeightInput。 未声明的业务 Body/Query 字段返回 422；身份仅取自服务端会话。",
+        "x-error-codes": [
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401,
+            "when": "未登录、会话过期或账号不可用。",
+            "owner": "M01 身份 / M02 身份检查"
+          },
+          {
+            "code": "VALIDATION_ERROR",
+            "status": 422,
+            "when": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+            "owner": "M02 / 公共命令执行器"
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "when": "未识别的服务端异常；业务事务不提交部分结果。",
+            "owner": "M02 错误适配"
+          },
+          {
+            "code": "CSRF_INVALID",
+            "status": 403,
+            "when": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。",
+            "owner": "M01；本地为测试命令执行器"
+          },
+          {
+            "code": "IDEMPOTENCY_CONFLICT",
+            "status": 409,
+            "when": "同一用户、方法、路径及幂等键对应不同请求体。",
+            "owner": "M01；本地为测试命令执行器"
+          },
+          {
+            "code": "REQUEST_IN_PROGRESS",
+            "status": 409,
+            "when": "同 key 的处理租约仍有效，或原执行者租约失效。稍后按原 key / 请求体重试。",
+            "owner": "M01；本地为测试命令执行器"
+          }
+        ]
+      }
+    },
+    "/me/weight-records/{id}": {
+      "delete": {
+        "operationId": "deleteWeightRecord",
+        "tags": [
+          "M02"
+        ],
+        "responses": {
+          "204": {
+            "description": "删除成功或本人重复删除；响应体为空，不返回 JSON。"
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "未登录、会话过期或账号不可用。",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHENTICATED",
+                        "message": "未登录、会话过期或账号不可用。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限或 CSRF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CSRF_INVALID": {
+                    "summary": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。",
+                    "value": {
+                      "error": {
+                        "code": "CSRF_INVALID",
+                        "message": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或非本人",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "要删除的记录不存在或不属于当前用户。",
+                    "value": {
+                      "error": {
+                        "code": "NOT_FOUND",
+                        "message": "要删除的记录不存在或不属于当前用户。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "版本/幂等/业务冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "summary": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+                        "fields": {
+                          "body": "请按接口声明提供合法字段。"
+                        }
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "未识别的服务端异常；业务事务不提交部分结果。",
+                    "value": {
+                      "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "未识别的服务端异常；业务事务不提交部分结果。"
+                      },
+                      "meta": {
+                        "requestId": "e0000000-0000-4000-8000-000000000001",
+                        "serverTime": "2026-10-20T02:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Client-Platform",
+            "in": "header",
+            "required": true,
+            "description": "00 总契约规定的 H5 通用请求头，由 M01 公共入口按统一规则处理。",
+            "schema": {
+              "type": "string",
+              "const": "h5"
+            },
+            "example": "h5"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            },
+            "example": "e3000000-0000-4000-8000-000000000001"
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+              "maxLength": 1500
+            },
+            "description": "当前会话对应的 CSRF 令牌；由 M01 获取/刷新。本地测试通过 /dev/session 返回，仅用于开发。"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "软删除本人称重记录",
+        "description": "本人重复删除均为 204，无响应体；他人或不存在记录为 404。删除最新有效测量后显示剩余最近一次。 未声明的业务 Body/Query 字段返回 422；身份仅取自服务端会话。",
+        "x-error-codes": [
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401,
+            "when": "未登录、会话过期或账号不可用。",
+            "owner": "M01 身份 / M02 身份检查"
+          },
+          {
+            "code": "VALIDATION_ERROR",
+            "status": 422,
+            "when": "参数、精度、时区、日期范围、游标或字段白名单校验失败。",
+            "owner": "M02 / 公共命令执行器"
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500,
+            "when": "未识别的服务端异常；业务事务不提交部分结果。",
+            "owner": "M02 错误适配"
+          },
+          {
+            "code": "CSRF_INVALID",
+            "status": 403,
+            "when": "写请求缺少有效 CSRF；本地测试令牌必须匹配当前会话。",
+            "owner": "M01；本地为测试命令执行器"
+          },
+          {
+            "code": "NOT_FOUND",
+            "status": 404,
+            "when": "要删除的记录不存在或不属于当前用户。",
+            "owner": "M02"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session",
+        "description": "M01 统一登录会话；session 仅为待 M01 确认的 Cookie 名称占位，不是已交付的正式登录约定。本地联调使用 m02_test_session；创建/获取测试会话见 API_GUIDE.md，不能用于生产。"
+      }
+    },
+    "schemas": {
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "const": "Asia/Shanghai"
+          }
+        },
+        "required": [
+          "requestId",
+          "serverTime",
+          "timezone"
+        ],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+                "maxLength": 1500
+              },
+              "message": {
+                "type": "string",
+                "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+                "maxLength": 1500
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+                  "maxLength": 1500
+                }
+              },
+              "retryAfterSeconds": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+              },
+              "serverTime": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "requestId",
+              "serverTime"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "HealthProfileInput": {
+        "type": "object",
+        "properties": {
+          "heightCm": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 50,
+            "maximum": 250,
+            "multipleOf": 0.1
+          },
+          "birthYear": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1900,
+            "description": "可空整数；1900 至服务端当前上海年份（含）。9999 只是 SQL 的静态存储边界。",
+            "x-dynamic-maximum": "currentYear(Asia/Shanghai)"
+          },
+          "targetWeightKg": {
+            "type": "number",
+            "minimum": 20,
+            "maximum": 350,
+            "multipleOf": 0.1
+          },
+          "waterTargetMl": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 6000
+          },
+          "calorieTargetKcal": {
+            "type": "number",
+            "minimum": 800,
+            "maximum": 5000,
+            "multipleOf": 0.1
+          },
+          "carbsTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "proteinTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "fatTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "goalType": {
+            "enum": [
+              "balanced",
+              "maintain",
+              "lose",
+              "gain"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483646
+          }
+        },
+        "required": [
+          "targetWeightKg",
+          "waterTargetMl",
+          "calorieTargetKcal",
+          "goalType",
+          "version"
+        ],
+        "additionalProperties": false,
+        "description": "完整 PUT：五个必填字段必须提供；可选字段省略或传 null 都保存为 null。首次创建 version=0，创建后为 1；更新携带最新 version，冲突返回 409 VERSION_CONFLICT。小数项最多一位小数。不得发送 id、userId、updatedAt 或其他未声明字段。"
+      },
+      "HealthProfile": {
+        "type": "object",
+        "properties": {
+          "heightCm": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 50,
+            "maximum": 250,
+            "multipleOf": 0.1
+          },
+          "birthYear": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1900,
+            "description": "可空整数；1900 至服务端当前上海年份（含）。9999 只是 SQL 的静态存储边界。",
+            "x-dynamic-maximum": "currentYear(Asia/Shanghai)"
+          },
+          "targetWeightKg": {
+            "type": "number",
+            "minimum": 20,
+            "maximum": 350,
+            "multipleOf": 0.1
+          },
+          "waterTargetMl": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 6000
+          },
+          "calorieTargetKcal": {
+            "type": "number",
+            "minimum": 800,
+            "maximum": 5000,
+            "multipleOf": 0.1
+          },
+          "carbsTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "proteinTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "fatTargetG": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000,
+            "multipleOf": 0.1
+          },
+          "goalType": {
+            "enum": [
+              "balanced",
+              "maintain",
+              "lose",
+              "gain"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "heightCm",
+          "birthYear",
+          "targetWeightKg",
+          "waterTargetMl",
+          "calorieTargetKcal",
+          "carbsTargetG",
+          "proteinTargetG",
+          "fatTargetG",
+          "goalType",
+          "version",
+          "id",
+          "userId",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "WaterRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "const": "manual"
+          },
+          "amountMl": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "id",
+          "recordedAt",
+          "businessDate",
+          "source",
+          "amountMl"
+        ],
+        "additionalProperties": false
+      },
+      "WeightRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "const": "manual"
+          },
+          "weightKg": {
+            "type": "number",
+            "minimum": 20,
+            "maximum": 350,
+            "multipleOf": 0.1
+          }
+        },
+        "required": [
+          "id",
+          "recordedAt",
+          "businessDate",
+          "source",
+          "weightKg"
+        ],
+        "additionalProperties": false
+      },
+      "WaterInput": {
+        "type": "object",
+        "properties": {
+          "amountMl": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "带明确时区的 ISO8601 时间，精确到秒或最多三位毫秒；例如 Z 或 +08:00。满足 operationNow - 30×24小时 <= recordedAt <= operationNow；省略时使用本事务 operationNow。入库转换为 UTC，businessDate 取 Asia/Shanghai 日期；历史补录不补发当天积分。"
+          },
+          "source": {
+            "const": "manual"
+          }
+        },
+        "required": [
+          "amountMl"
+        ],
+        "additionalProperties": false
+      },
+      "WaterPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaterRecord"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "description": "items 按 recordedAt、id 倒序；排除软删记录。nextCursor=null 表示结束。游标是原样传回的不透明字符串，绑定当前用户、记录类型及日期筛选；换账号或日期后从第一页开始。"
+      },
+      "WeightInput": {
+        "type": "object",
+        "properties": {
+          "weightKg": {
+            "type": "number",
+            "minimum": 20,
+            "maximum": 350,
+            "multipleOf": 0.1
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "带明确时区的 ISO8601 时间，精确到秒或最多三位毫秒；例如 Z 或 +08:00。满足 operationNow - 30×24小时 <= recordedAt <= operationNow；省略时使用本事务 operationNow。入库转换为 UTC，businessDate 取 Asia/Shanghai 日期；历史补录不补发当天积分。"
+          },
+          "source": {
+            "const": "manual"
+          }
+        },
+        "required": [
+          "weightKg"
+        ],
+        "additionalProperties": false
+      },
+      "WeightPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeightRecord"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "description": "items 按 recordedAt、id 倒序；排除软删记录。nextCursor=null 表示结束。游标是原样传回的不透明字符串，绑定当前用户、记录类型及日期筛选；换账号或日期后从第一页开始。"
+      },
+      "WaterSummary": {
+        "type": "object",
+        "properties": {
+          "totalMl": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6000
+          },
+          "targetMl": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "progress": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "totalMl",
+          "targetMl",
+          "progress"
+        ],
+        "additionalProperties": false
+      },
+      "PointAward": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "taskCode": {
+            "enum": [
+              "daily_checkin",
+              "daily_water",
+              "daily_meal",
+              "course_workout"
+            ]
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "scopeKey": {
+            "type": "string",
+            "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+            "maxLength": 1500
+          }
+        },
+        "required": [
+          "id",
+          "taskCode",
+          "points",
+          "businessDate",
+          "scopeKey"
+        ],
+        "additionalProperties": false
+      },
+      "CreateWaterResult": {
+        "type": "object",
+        "properties": {
+          "record": {
+            "$ref": "#/components/schemas/WaterRecord"
+          },
+          "todaySummary": {
+            "$ref": "#/components/schemas/WaterSummary"
+          },
+          "awards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PointAward"
+            }
+          }
+        },
+        "required": [
+          "record",
+          "todaySummary",
+          "awards"
+        ],
+        "additionalProperties": false,
+        "description": "record 为本次记录；todaySummary 总是服务端当前上海业务日的累计，即使补录历史日期。无档案时 targetMl/progress 为 null；progress 为累计/当前目标，可能超过 1。awards 由 M05 同事务返回；历史补录或当日已获奖可为空，删除不恢复奖励资格。"
+      },
+      "MealItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "foodId": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+            "maxLength": 1500
+          },
+          "grams": {
+            "type": "number"
+          },
+          "caloriesKcal": {
+            "type": "number"
+          },
+          "carbsG": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "proteinG": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "fatG": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "nutritionSource": {
+            "enum": [
+              "catalog",
+              "model",
+              "user"
+            ]
+          },
+          "confidence": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "foodId",
+          "name",
+          "grams",
+          "caloriesKcal",
+          "carbsG",
+          "proteinG",
+          "fatG",
+          "nutritionSource",
+          "confidence"
+        ],
+        "additionalProperties": false
+      },
+      "Meal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "mealType": {
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack"
+            ]
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "enum": [
+              "manual",
+              "photo"
+            ]
+          },
+          "photoAssetId": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MealItem"
+            }
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "caloriesKcal": {
+                "type": "number"
+              },
+              "carbsG": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "proteinG": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "fatG": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "caloriesKcal",
+              "carbsG",
+              "proteinG",
+              "fatG"
+            ],
+            "additionalProperties": false
+          },
+          "version": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "mealType",
+          "recordedAt",
+          "businessDate",
+          "source",
+          "photoAssetId",
+          "photoUrl",
+          "items",
+          "totals",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "Course": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+          },
+          "title": {
+            "type": "string",
+            "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+            "maxLength": 1500
+          },
+          "category": {
+            "enum": [
+              "stretch",
+              "strength",
+              "cardio"
+            ]
+          },
+          "level": {
+            "enum": [
+              "beginner",
+              "intermediate"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+            "maxLength": 1500
+          },
+          "coverUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "videoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "estimatedDurationSeconds": {
+            "type": "integer"
+          },
+          "estimatedCaloriesKcal": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "version": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "category",
+          "level",
+          "description",
+          "coverUrl",
+          "videoUrl",
+          "estimatedDurationSeconds",
+          "estimatedCaloriesKcal",
+          "status",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "enum": [
+              "daily_checkin",
+              "daily_water",
+              "daily_meal",
+              "course_workout"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+            "maxLength": 1500
+          },
+          "description": {
+            "type": "string",
+            "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+            "maxLength": 1500
+          },
+          "rewardPoints": {
+            "type": "integer"
+          },
+          "progress": {
+            "type": "number"
+          },
+          "target": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "completed"
+            ]
+          },
+          "completedAt": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "action": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "navigate",
+                  "checkin"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "description": "机器可读错误码。M02 常见码及触发条件见各操作 x-error-codes 和 API_GUIDE.md；M01 公共鉴权/限流层可能返回其他契约错误码。",
+                "maxLength": 1500
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "code",
+          "title",
+          "description",
+          "rewardPoints",
+          "progress",
+          "target",
+          "status",
+          "completedAt",
+          "action"
+        ],
+        "additionalProperties": false
+      },
+      "Dashboard": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "isDemo": {
+            "const": false
+          },
+          "water": {
+            "$ref": "#/components/schemas/WaterSummary"
+          },
+          "weight": {
+            "type": "object",
+            "properties": {
+              "latestKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "targetKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "previousKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "changeKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "bmi": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "latestKg",
+              "targetKg",
+              "previousKg",
+              "changeKg",
+              "bmi"
+            ],
+            "additionalProperties": false
+          },
+          "energy": {
+            "type": "object",
+            "properties": {
+              "intakeKcal": {
+                "type": "number"
+              },
+              "exerciseKcal": {
+                "type": "number"
+              },
+              "baseTargetKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "effectiveTargetKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "remainingKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "exceededKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "intakeKcal",
+              "exerciseKcal",
+              "baseTargetKcal",
+              "effectiveTargetKcal",
+              "remainingKcal",
+              "exceededKcal"
+            ],
+            "additionalProperties": false
+          },
+          "nutrients": {
+            "type": "object",
+            "properties": {
+              "carbs": {
+                "type": "object",
+                "properties": {
+                  "consumedG": {
+                    "type": "number"
+                  },
+                  "targetG": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "complete": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "consumedG",
+                  "targetG",
+                  "complete"
+                ],
+                "additionalProperties": false
+              },
+              "protein": {
+                "type": "object",
+                "properties": {
+                  "consumedG": {
+                    "type": "number"
+                  },
+                  "targetG": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "complete": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "consumedG",
+                  "targetG",
+                  "complete"
+                ],
+                "additionalProperties": false
+              },
+              "fat": {
+                "type": "object",
+                "properties": {
+                  "consumedG": {
+                    "type": "number"
+                  },
+                  "targetG": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "complete": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "consumedG",
+                  "targetG",
+                  "complete"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "carbs",
+              "protein",
+              "fat"
+            ],
+            "additionalProperties": false
+          },
+          "week": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "hasMealRecord": {
+                  "type": "boolean"
+                },
+                "hasTrainingRecord": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "date",
+                "hasMealRecord",
+                "hasTrainingRecord"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "latestMeal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Meal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recommendedWorkout": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Course"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pointsBalance": {
+            "type": "integer"
+          },
+          "dailyTasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            }
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "date",
+          "isDemo",
+          "water",
+          "weight",
+          "energy",
+          "nutrients",
+          "week",
+          "latestMeal",
+          "recommendedWorkout",
+          "pointsBalance",
+          "dailyTasks",
+          "generatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "Overview": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "enum": [
+              7,
+              30
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "avgIntakeKcal": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "avgWaterMl": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "latestWeightKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "completedWorkouts": {
+                "type": "integer"
+              },
+              "moodRecordedDays": {
+                "type": "integer"
+              },
+              "pointsBalance": {
+                "type": "integer"
+              },
+              "activeBookings": {
+                "type": "integer"
+              },
+              "totalExerciseKcal": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "avgIntakeKcal",
+              "avgWaterMl",
+              "latestWeightKg",
+              "completedWorkouts",
+              "moodRecordedDays",
+              "pointsBalance",
+              "activeBookings",
+              "totalExerciseKcal"
+            ],
+            "additionalProperties": false
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "intakeKcal": {
+                  "type": "number"
+                },
+                "exerciseKcal": {
+                  "type": "number"
+                },
+                "waterMl": {
+                  "type": "integer"
+                },
+                "weightKg": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "mood": {
+                  "enum": [
+                    "happy",
+                    "calm",
+                    "tired",
+                    "low",
+                    null
+                  ]
+                },
+                "completedWorkouts": {
+                  "type": "integer"
+                },
+                "hasMealRecord": {
+                  "type": "boolean"
+                },
+                "hasWaterRecord": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "date",
+                "intakeKcal",
+                "exerciseKcal",
+                "waterMl",
+                "weightKg",
+                "mood",
+                "completedWorkouts",
+                "hasMealRecord",
+                "hasWaterRecord"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "mealDays": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              },
+              "waterDays": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              },
+              "weightDays": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              },
+              "moodDays": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              },
+              "rangeDays": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 30
+              }
+            },
+            "required": [
+              "mealDays",
+              "waterDays",
+              "weightDays",
+              "moodDays",
+              "rangeDays"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "range",
+          "startDate",
+          "endDate",
+          "generatedAt",
+          "summary",
+          "series",
+          "coverage"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "externalDocs": {
+    "description": "M02 请求、响应、错误处理及公共底座接入说明",
+    "url": "https://github.com/Mat11-oo/qingyang-health-m02/blob/main/docs/M02/API_GUIDE.md"
+  },
+  "x-integration-dependencies": {
+    "owner": "M01",
+    "pending": [
+      "正式会话 Cookie 名称",
+      "CSRF 获取及刷新流程",
+      "统一鉴权和限流",
+      "真实迁移历史"
+    ],
+    "contractMetadata": {
+      "method": "GET",
+      "path": "/api/v1/meta/contract",
+      "implementedInM02": false,
+      "responseFields": [
+        "contractVersion",
+        "schemaVersion",
+        "baselineSha256",
+        "timezone"
+      ],
+      "note": "由 M01 实现；schemaVersion 从实际迁移历史读取，不返回数据库连接信息。"
+    }
+  }
+}

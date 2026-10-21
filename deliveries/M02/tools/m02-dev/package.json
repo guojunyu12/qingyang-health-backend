@@ -1,0 +1,22 @@
+{
+  "name": "qingyang-m02-local-integration",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=../../.env.api --import tsx main.ts",
+    "test:mysql": "tsx mysql-acceptance.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
+    "@types/express": "^5.0.0",
+    "mysql2": "^3.14.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "tsx": "4.21.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
+}

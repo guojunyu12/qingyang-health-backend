@@ -1,0 +1,14 @@
+{
+  "contractVersion": "QY-MYSQL-1.0.0",
+  "schemaVersion": "V001",
+  "codeBaseCommit": "7edf70467eb36d537702430881a5d5a153001ecc",
+  "baselineSha256": "64ec33a66c813321d12a7bbc29eff4d3981d6d3f3eacf6fc1eb7f9265efd3c56",
+  "database": "MySQL 8.4",
+  "timezone": "Asia/Shanghai",
+  "applied": false,
+  "ownedTables": [
+    "health_profiles",
+    "water_records",
+    "weight_records"
+  ]
+}

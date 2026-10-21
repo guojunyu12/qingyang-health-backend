@@ -1,0 +1,7 @@
+{
+  "db/migrations/V001__baseline.sql": "64ec33a66c813321d12a7bbc29eff4d3981d6d3f3eacf6fc1eb7f9265efd3c56",
+  "contracts/shared_types.ts": "994aed0dd464d290d3096804db930cca0153e0846fc18116a5afc31eb0cdfaee",
+  "db/seeds/fixture_ids.json": "f1e73672999dbef94a3b14092417d177c58bd5df840262a79c12416c0947fa11",
+  "contracts/project_baseline.json": "abec06133252832b298aaf69931387e2ee101b0f870f4647b8f8b789a1ca7778",
+  "contracts/schema_manifest.json": "ef6bc1eb29ecd5a92d82852b4f1fb073c69877a9a7e93da676978f8500257df3"
+}
