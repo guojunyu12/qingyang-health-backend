@@ -53,3 +53,11 @@ AUTH_NO_LISTEN=1 DB_NAME=qingyang_auth_test node --import tsx tests/support/live
 ```
 
 然后在前端仓库运行 `QY_LIVE_E2E=1 npx playwright test tests/e2e/health-live.spec.ts --workers=1`。测试入口只接受隔离测试库，验证码经注入发件器保存于忽略的 `.local/m02-e2e-code`，不会向外发邮件；它不被生产入口引用。测试完成后关闭专用入口，恢复普通 `npm run dev`。不要把测试 API 当作实际使用服务。
+
+## 2026-10-21 团队交接补充
+
+- [十个接口的调用、请求头、错误与端口说明](M02/API_GUIDE.md)
+- [M02三表、独立开发/整合库与连接方式](M02/DATABASE.md)
+- [本轮交接补充记录](integration/M02_合并记录_2026-10-21_交接补充.md)
+
+本轮保留当前已整合业务代码，修正OpenAPI中的实际Cookie名称及全部写操作必需幂等头，并补齐动态出生年份说明。SMTP未配置的本机尚不能启动普通API；此前历史验收不等于本机已完成邮箱登录验收。

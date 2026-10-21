@@ -331,6 +331,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "所有M02写操作均复用M01幂等事务；同一次操作重试保留原key及body。",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            }
           }
         ],
         "security": [
@@ -814,6 +825,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "所有M02写操作均复用M01幂等事务；同一次操作重试保留原key及body。",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            }
           }
         ],
         "security": [
@@ -1175,6 +1197,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "所有M02写操作均复用M01幂等事务；同一次操作重试保留原key及body。",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+            }
           }
         ],
         "security": [
@@ -1190,7 +1223,7 @@
       "cookieAuth": {
         "type": "apiKey",
         "in": "cookie",
-        "name": "session"
+        "name": "qy_access"
       }
     },
     "schemas": {
@@ -1290,7 +1323,8 @@
               "null"
             ],
             "minimum": 1900,
-            "maximum": 9999
+            "description": "可空；1900至服务端当前上海年份。SQL静态上限9999不作为API动态上限。",
+            "x-dynamic-maximum": "current year in Asia/Shanghai"
           },
           "targetWeightKg": {
             "type": "number",
