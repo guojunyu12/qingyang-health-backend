@@ -1,0 +1,36 @@
+{
+  "name": "qingyang-health-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start:h5": "node --env-file=.env dist/src/m05/h5-main.js",
+    "start:admin": "node --env-file=.env dist/src/m05/admin-main.js",
+    "db:init": "node db/m05/migrate.mjs",
+    "db:m05": "node db/m05/phase6-migrate.mjs",
+    "db:seed": "node db/m05/seed.mjs",
+    "db:seed:points": "node db/m05/seed-points.mjs",
+    "db:seed:activities": "node db/m05/seed-activities.mjs",
+    "db:seed:rewards": "node db/m05/seed-rewards.mjs"
+  },
+  "dependencies": {
+    "@nestjs/common": "11.1.0",
+    "@nestjs/core": "11.1.0",
+    "@nestjs/platform-express": "11.1.0",
+    "express": "5.2.1",
+    "mysql2": "3.15.0",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "tsx": "4.20.0",
+    "@types/node": "24.0.0",
+    "@types/express": "5.0.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "phase": 7,
+  "title": "独立验收与整合交付",
+  "status": "awaiting_human_review",
+  "selfTestPassed": true,
+  "humanApproved": false,
+  "previousPhaseApproved": true,
+  "nextPhaseStarted": false,
+  "date": "2026-10-21",
+  "checks": {
+    "e2e": {
+      "passed": 8,
+      "total": 8,
+      "evidence": "e2e-checks.json"
+    },
+    "fullRegression": {
+      "passed": 147,
+      "total": 147,
+      "evidence": "regression.log"
+    },
+    "http": {
+      "passed": 10,
+      "total": 10,
+      "evidence": "http-checks.json"
+    },
+    "browser": {
+      "passed": 8,
+      "total": 8,
+      "evidence": "ui-checks.json"
+    },
+    "build": {
+      "passed": true,
+      "evidence": "build.log"
+    },
+    "mainDatabaseReadOnly": {
+      "passed": true,
+      "evidence": "manual-data-snapshot.json"
+    }
+  },
+  "totalChecks": 165,
+  "scope": [
+    "只运行 M05 的 H5、后台、双 API、Worker 与 MySQL",
+    "签到积分、活动发布及预约取消、数字权益兑换、站内消息和安全素材全链路",
+    "后台八项实时 MySQL 运营指标及权限校验",
+    "隔离库两次 API 重启后的 Worker 恢复、持久化、去重与账号隔离",
+    "46 张业务表、V001 原始校验和与 V002_M05 增量交接"
+  ],
+  "excluded": [
+    "短信发送与短信网关",
+    "浏览器及 App 设备推送",
+    "正式 M01 登录、真实权益供应商及云素材服务"
+  ],
+  "database": {
+    "schemaVersion": "V002_M05",
+    "businessTables": 46,
+    "baselineSha256": "64ec33a66c813321d12a7bbc29eff4d3981d6d3f3eacf6fc1eb7f9265efd3c56",
+    "baselineUnchanged": true,
+    "productionDatabaseMutatedByPhase7Tests": false
+  },
+  "urls": {
+    "h5": "http://127.0.0.1:3000/profile",
+    "admin": "http://127.0.0.1:3001/overview",
+    "engineering": "http://127.0.0.1:3001/engineering"
+  },
+  "manualFixtureState": {
+    "A": 50,
+    "B": 15,
+    "admin": 0,
+    "orders": {
+      "fulfilled": 2,
+      "refunded": 1,
+      "pending": 1
+    }
+  },
+  "handoff": "handoff.json",
+  "integration": "integration.md",
+  "screenshots": [
+    "screenshots/admin-overview.png",
+    "screenshots/admin-mobile.png",
+    "screenshots/h5-messages.png",
+    "screenshots/stage-gate.png"
+  ]
+}

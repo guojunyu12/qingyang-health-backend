@@ -1,9 +1,7 @@
 node_modules/
 dist/
-coverage/
-.env*
-!.env.example
-.local/
-*.log
+.runtime/
+.env
+.env.local
+*.tsbuildinfo
 .DS_Store
-__pycache__/
