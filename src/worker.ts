@@ -1,3 +1,4 @@
+import { installM05Consumers, processM05Recipients, m05SettlementWorker } from "./m05/runtime.js";
 import { recoverMedia } from "./common/media-recovery.js";
 import { Worker } from "bullmq";
 import { queueConnection, queueName, dispatchOnce } from "./common/outbox.js";
@@ -7,6 +8,7 @@ import { recoverRecognitionExpired } from "./modules/nutrition/recognition.worke
 import { unitOfWorkPort } from "./common/ports.js";
 import { recognitionWorker } from "./modules/nutrition/runtime.js";
 import { consumeRecognitionEvent } from "./modules/nutrition/queue.js";
+const unregisterM05 = await installM05Consumers();
 const recognition = recognitionWorker();
 const nutritionWorker = new Worker(
   queueName("nutrition.recognition.requested.v1"),
@@ -42,6 +44,8 @@ const timer = setInterval(async () => {
   running = true;
   try {
     await dispatchOnce();
+    await processM05Recipients();
+    await m05SettlementWorker.tick();
     await recoverMedia();
     await recoverRecognitionExpired(unitOfWorkPort);
     for (const table of ["auth_challenges", "refresh_tokens"])
@@ -56,6 +60,7 @@ const timer = setInterval(async () => {
 }, 500);
 const close = async () => {
   clearInterval(timer);
+  unregisterM05();
   recognition?.stop();
   await nutritionWorker.close();
   await worker.close();

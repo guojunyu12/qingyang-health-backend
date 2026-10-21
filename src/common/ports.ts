@@ -4,7 +4,12 @@ import type {
   UnitOfWork,
   OutboxPort,
   MediaPort,
-  PointsPort, NutritionQueryPort, TrainingQueryPort, PointsQueryPort, CompanionQueryPort, ActivitiesQueryPort,
+  PointsPort,
+  NutritionQueryPort,
+  TrainingQueryPort,
+  PointsQueryPort,
+  CompanionQueryPort,
+  ActivitiesQueryPort,
 } from "../../contracts/shared_types.js";
 import { requireAdmin, audit } from "./foundation.js";
 import { unitOfWork } from "./foundation.js";
@@ -111,7 +116,14 @@ export const mediaPort: MediaPort = {
   },
 };
 /** M05 registers its real port; no zero-balance mock or cross-module writes here. */
-export const modulePorts: { points?: PointsPort; nutrition?: NutritionQueryPort; training?: TrainingQueryPort; pointsQuery?: PointsQueryPort; companion?: CompanionQueryPort; activities?: ActivitiesQueryPort } = {};
+export const modulePorts: {
+  points?: PointsPort;
+  nutrition?: NutritionQueryPort;
+  training?: TrainingQueryPort;
+  pointsQuery?: PointsQueryPort;
+  companion?: CompanionQueryPort;
+  activities?: ActivitiesQueryPort;
+} = {};
 
 export const userAdministrationPort = {
   disableInTransaction: async (
@@ -132,3 +144,37 @@ export const userAdministrationPort = {
     await audit(c, ctx, "user.disable", "user", targetUserId, {});
   },
 };
+
+/** M05 supplies intent, M01 owns validation and notification persistence. */
+export const notificationsPort: import("../../contracts/m05-notifications.js").NotificationsPort =
+  {
+    mode: "external",
+    async createInTransaction(tx, input) {
+      const { NotificationService } =
+        await import("../modules/notifications/service.js");
+      const at = new Date().toISOString();
+      const path =
+        input.actionPath === "/messages"
+          ? "/profile"
+          : input.actionPath === "/profile" ||
+              input.actionPath.startsWith("/m05/")
+            ? input.actionPath
+            : "/m05" + input.actionPath;
+      return new NotificationService().createInTransaction(
+        raw(tx),
+        {
+          userId: input.userId,
+          operationNow: at,
+          businessDate: new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Shanghai",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).format(new Date(at)),
+          requestId: randomUUID(),
+          platform: "h5",
+        },
+        { ...input, actionPath: path },
+      );
+    },
+  };

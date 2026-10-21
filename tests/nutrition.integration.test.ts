@@ -16,7 +16,7 @@ const integration=process.env.DB_NAME?.endsWith('_test')?test:test.skip;
 integration('M03 real M01 HTTP/MySQL/Redis: ownership, transactions, snapshots, worker CAS and M02 aggregation',async()=>{
  process.env.AUTH_NO_LISTEN='1';const {createApp}=await import('../src/main.js');
  let code='';const identity=new IdentityService(async(_email,value)=>{code=value});
- const app=await createApp(identity);await app.listen(0,'127.0.0.1');
+ const app=await createApp(identity); delete modulePorts.points; delete modulePorts.pointsQuery;await app.listen(0,'127.0.0.1');
  const base=`http://127.0.0.1:${app.getHttpServer().address().port}/api/v1`;
  let cookies='',csrf='',uid='';
  process.env.TRUSTED_PROXY_TOKEN='m03-test-'+randomUUID();

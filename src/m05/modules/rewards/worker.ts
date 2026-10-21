@@ -1,0 +1,229 @@
+import { randomUUID } from "node:crypto";
+import { MysqlUnitOfWork } from "../../common/database.js";
+import { requireValue } from "../../common/errors.js";
+import { redemption, account, reward } from "./model.js";
+import { RewardsService } from "./service.js";
+import type { ProviderResult } from "./provider.js";
+type Lease = {
+  id: string;
+  aggregate_id: string;
+  locked_by: string;
+  lease_version: number;
+};
+export class RedemptionWorker {
+  private timer: ReturnType<typeof setInterval> | null = null;
+  private running: Promise<unknown> | null = null;
+  constructor(
+    private uow: MysqlUnitOfWork,
+    private service: RewardsService,
+  ) {}
+  async claim(orderId?: string): Promise<Lease | null> {
+    return this.uow.runSystem("outbox_claim", async (tx) => {
+      const rows = await tx.query<Lease>(
+        `SELECT id,aggregate_id,lease_version FROM outbox_events WHERE event_type='points.redemption.requested.v1' AND ${orderId ? "aggregate_id=? AND " : ""}((status='pending' AND next_attempt_at<=UTC_TIMESTAMP(3)) OR (status='processing' AND locked_until<=UTC_TIMESTAMP(3))) ORDER BY next_attempt_at,id LIMIT 1 FOR UPDATE SKIP LOCKED`,
+        orderId ? [orderId] : [],
+      );
+      if (!rows.length) return null;
+      const r = rows[0],
+        token = randomUUID();
+      await tx.execute(
+        "UPDATE outbox_events SET status='processing',locked_by=?,locked_until=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 30 SECOND),lease_version=lease_version+1,attempts=attempts+1,last_error_code=NULL WHERE id=?",
+        [token, r.id],
+      );
+      return {
+        ...r,
+        locked_by: token,
+        lease_version: Number(r.lease_version) + 1,
+      };
+    });
+  }
+  private async lease(
+    tx: Parameters<Parameters<MysqlUnitOfWork["runSystem"]>[1]>[0],
+    l: Lease,
+  ) {
+    const [r] = await tx.query<{ id: string }>(
+      "SELECT id FROM outbox_events WHERE id=? AND status=? AND locked_by=? AND lease_version=? AND locked_until>UTC_TIMESTAMP(3) FOR UPDATE",
+      [l.id, "processing", l.locked_by, l.lease_version],
+    );
+    return Boolean(r);
+  }
+  async prepare(l: Lease) {
+    return this.uow.runSystem("provider_job", async (tx) => {
+      const located = await redemption(tx, l.aggregate_id);
+      await tx.query("SELECT id FROM users WHERE id=? FOR UPDATE", [
+        located.user_id,
+      ]);
+      const r = await redemption(tx, located.id, undefined, true);
+      if (!(await this.lease(tx, l))) return null;
+      if (r.status !== "pending") {
+        await tx.execute(
+          "UPDATE outbox_events SET status='published',published_at=UTC_TIMESTAMP(3),locked_by=NULL,locked_until=NULL WHERE id=?",
+          [l.id],
+        );
+        return null;
+      }
+      requireValue(
+        r.version < 2147483647,
+        409,
+        "INTEGER_OVERFLOW",
+        "订单版本超出范围",
+      );
+      const first = r.fulfillment_status === "pending";
+      if (first) {
+        await tx.execute(
+          "UPDATE point_redemptions SET fulfillment_status='processing',version=version+1 WHERE id=? AND version=?",
+          [r.id, r.version],
+        );
+        r.version++;
+        r.fulfillment_status = "processing";
+      }
+      return { r, first };
+    });
+  }
+  async apply(l: Lease, expectedVersion: number, result: ProviderResult) {
+    return this.uow.runSystem("provider_job", async (tx, ctx) => {
+      const located = await redemption(tx, l.aggregate_id);
+      await tx.query("SELECT id FROM users WHERE id=? FOR UPDATE", [
+        located.user_id,
+      ]);
+      const r = await redemption(tx, located.id, undefined, true);
+      if (result.status === "final_failure" && r.status === "pending") {
+        await account(tx, r.user_id);
+        await reward(tx, r.reward_id, true);
+      }
+      if (result.status === "succeeded" && r.status === "refunded") {
+        await tx.execute(
+          "INSERT INTO audit_logs (id,actor_user_id,action,resource_type,resource_id,request_id,change_summary,occurred_at) VALUES (?,NULL,?,?,?,?,?,?)",
+          [
+            randomUUID(),
+            "redemption.late_success_ignored",
+            "point_redemptions",
+            r.id,
+            ctx.requestId,
+            JSON.stringify({ status: r.status, ignored: true }),
+            new Date(ctx.operationNow),
+          ],
+        );
+      }
+      if (!(await this.lease(tx, l)))
+        return { ignored: true, reason: "STALE_LEASE" };
+      if (r.status === "pending" && r.version !== expectedVersion) {
+        await tx.execute(
+          "UPDATE outbox_events SET status='pending',next_attempt_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 60 SECOND),locked_by=NULL,locked_until=NULL,last_error_code='STALE_ORDER_VERSION' WHERE id=?",
+          [l.id],
+        );
+        return { ignored: true, reason: "STALE_ORDER_VERSION" };
+      }
+      if (r.status !== "pending") {
+        await tx.execute(
+          "UPDATE outbox_events SET status='published',published_at=UTC_TIMESTAMP(3),locked_by=NULL,locked_until=NULL,last_error_code=? WHERE id=?",
+          [
+            result.status === "succeeded" && r.status === "refunded"
+              ? "LATE_SUCCESS_AFTER_REFUND"
+              : "STALE_ORDER_VERSION",
+            l.id,
+          ],
+        );
+        return { ignored: true, reason: "STALE_ORDER_VERSION" };
+      }
+      if (result.status === "unknown") {
+        await tx.execute(
+          "UPDATE outbox_events SET status='pending',next_attempt_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 60 SECOND),locked_by=NULL,locked_until=NULL,last_error_code='RESULT_UNKNOWN' WHERE id=?",
+          [l.id],
+        );
+        return { pending: true };
+      }
+      const finished = await this.service.finish(
+        tx,
+        r,
+        result,
+        ctx.operationNow,
+      );
+      await tx.execute(
+        "UPDATE outbox_events SET status='published',published_at=UTC_TIMESTAMP(3),locked_by=NULL,locked_until=NULL,last_error_code=NULL WHERE id=?",
+        [l.id],
+      );
+      return finished;
+    });
+  }
+  async execute(l: Lease) {
+    const prepared = await this.prepare(l);
+    if (!prepared) return { ignored: true };
+    const { r, first } = prepared;
+    let result: ProviderResult;
+    // Provider I/O is outside all transactions. Deadline bounds worker shutdown; an aborted/late
+    // response is UNKNOWN, never a refund. Future attempts use query, never blindly fulfill again.
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      result = await Promise.race([
+        first
+          ? this.service.provider.fulfill({
+              redemptionId: r.id,
+              rewardId: r.reward_id,
+              userId: r.user_id,
+            })
+          : this.service.provider.query({
+              redemptionId: r.id,
+              rewardId: r.reward_id,
+              userId: r.user_id,
+            }),
+        new Promise<ProviderResult>((resolve) => {
+          timeout = setTimeout(
+            () => resolve({ status: "unknown", reason: "PROVIDER_TIMEOUT" }),
+            10000,
+          );
+        }),
+      ]);
+    } catch {
+      result = { status: "unknown", reason: "PROVIDER_ERROR" };
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
+    if (
+      !result ||
+      !["succeeded", "final_failure", "unknown"].includes(result.status)
+    )
+      result = { status: "unknown", reason: "INVALID_PROVIDER_RESULT" };
+    return this.apply(l, r.version, result);
+  }
+  async tick() {
+    if (this.running) return this.running;
+    this.running = (async () => {
+      let processed = 0;
+      for (let i = 0; i < 10; i++) {
+        const l = await this.claim();
+        if (!l) break;
+        try {
+          await this.execute(l);
+          processed++;
+        } catch (e) {
+          console.error(
+            JSON.stringify({
+              worker: "redemption",
+              code: (e as { code?: string }).code || "FULFILLMENT_FAILED",
+            }),
+          ); /* lease expiry permits a query-only retry */
+        }
+      }
+      return { processed };
+    })();
+    try {
+      return await this.running;
+    } finally {
+      this.running = null;
+    }
+  }
+  start() {
+    if (this.service.provider.mode === "unavailable") return;
+    this.timer = setInterval(
+      () =>
+        void this.tick().catch(() => console.error("REDEMPTION_SCAN_FAILED")),
+      3000,
+    );
+    this.timer.unref();
+  }
+  async stop() {
+    if (this.timer) clearInterval(this.timer);
+    await this.running?.catch(() => {});
+  }
+}

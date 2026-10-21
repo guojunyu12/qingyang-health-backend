@@ -107,8 +107,9 @@ export interface CommunityProfileDto extends CommunityProfileInput { id:UUID; us
 export type OutboxEventType =
   | 'media.validate.requested.v1' | 'nutrition.recognition.requested.v1' | 'companion.reply.requested.v1'
   | 'training.reminder.due.v1' | 'activity.booking.confirmed.v1' | 'activity.booking.canceled.v1'
-  | 'activity.slot.canceled.v1' | 'points.redemption.requested.v1' | 'points.redemption.finished.v1';
+  | 'activity.slot.canceled.v1' | 'points.redemption.requested.v1' | 'points.redemption.finished.v1' | 'm05.message.campaign.requested.v1';
 export interface OutboxPayloadMap {
+  'm05.message.campaign.requested.v1':{campaignId:UUID;campaignVersion:number};
   'media.validate.requested.v1':{assetId:UUID};
   'nutrition.recognition.requested.v1':{jobId:UUID;userId:UUID;assetId:UUID};
   'companion.reply.requested.v1':{assistantMessageId:UUID;sessionId:UUID;userId:UUID};
@@ -164,5 +165,5 @@ export interface OverviewDto {
 
 /** Query ports use the provided read-snapshot tx. Days methods return recorded rows only; M02 fills the date grid. */
 export interface ContractMetadataDto { contractVersion:typeof CONTRACT_VERSION; schemaVersion:string; baselineSha256:string; timezone:typeof BUSINESS_TIMEZONE; }
-export const NOTIFICATION_TYPES = ['training_reminder','booking_confirmed','booking_canceled','activity_canceled','redemption_result'] as const;
+export const NOTIFICATION_TYPES = ['training_reminder','booking_confirmed','booking_canceled','activity_canceled','redemption_result','operations_message'] as const;
 export const DEVELOPMENT_RULES = { daily_checkin:10, daily_water:5, daily_meal:10, course_workout:20, workoutThresholdRatio:0.8 } as const;

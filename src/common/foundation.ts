@@ -28,7 +28,10 @@ export function safeAction(p: string) {
       "/companion",
       "/profile",
       "/overview",
-    ].includes(p)
+    ].includes(p) &&
+    !/^\/m05\/(points|rewards|redemptions|activities|bookings|community)(\/[0-9a-f-]{36})?$/.test(
+      p,
+    )
   )
     reject(422, "INVALID_ACTION", "通知跳转地址无效");
   return p;
@@ -55,12 +58,16 @@ const context = (userId: string): Context => {
     platform: "h5",
   };
 };
-export async function lockUsers(c: PoolConnection, ids: string[]) {
+export async function lockUsers(
+  c: PoolConnection,
+  ids: string[],
+  activeUserId?: string,
+) {
   for (const id of [...new Set(ids)].sort()) {
     const u = (
       await rows(c, "SELECT id,status FROM users WHERE id=? FOR UPDATE", [id])
     )[0];
-    if (!u || u.status !== "active")
+    if (!u || ((!activeUserId || id === activeUserId) && u.status !== "active"))
       reject(403, "ACCOUNT_DISABLED", "账号不可用");
   }
 }
@@ -82,7 +89,7 @@ export const unitOfWork = {
   ) => {
     const ctx = context(actor);
     return transaction(async (c) => {
-      await lockUsers(c, [actor, ...ids]);
+      await lockUsers(c, [actor, ...ids], actor);
       return fn(c, ctx);
     });
   },
@@ -95,6 +102,7 @@ export async function idempotent<T>(
   body: unknown,
   fn: (c: PoolConnection, ctx: Context) => Promise<T>,
   responseStatus = 200,
+  referencedUserIds: readonly string[] = [],
 ): Promise<T> {
   if (!isUuid(key))
     reject(422, "INVALID_IDEMPOTENCY_KEY", "缺少有效的幂等请求标识");
@@ -137,34 +145,39 @@ export async function idempotent<T>(
     return lease.row.response_body as T;
   }
   try {
-    return await unitOfWork.runForUser(userId, async (c, ctx) => {
-      const r = (
-        await rows(
-          c,
-          "SELECT * FROM idempotency_requests WHERE id=? FOR UPDATE",
-          [lease.row.id],
+    return await unitOfWork.runForUsers(
+      userId,
+      [...referencedUserIds],
+      async (c, ctx) => {
+        const r = (
+          await rows(
+            c,
+            "SELECT * FROM idempotency_requests WHERE id=? FOR UPDATE",
+            [lease.row.id],
+          )
+        )[0];
+        if (
+          r.status !== "processing" ||
+          r.locked_by !== owner ||
+          r.lease_version !== lease.row.lease_version ||
+          new Date(r.locked_until.replace(" ", "T") + "Z").getTime() <=
+            Date.now()
         )
-      )[0];
-      if (
-        r.status !== "processing" ||
-        r.locked_by !== owner ||
-        r.lease_version !== lease.row.lease_version ||
-        new Date(r.locked_until.replace(" ", "T") + "Z").getTime() <= Date.now()
-      )
-        reject(409, "REQUEST_IN_PROGRESS", "请求租约已变化", 2);
-      const data = await fn(c, ctx);
-      await c.execute(
-        "UPDATE idempotency_requests SET status='completed',response_status=?,response_body=?,locked_by=NULL,locked_until=NULL WHERE id=? AND locked_by=? AND lease_version=?",
-        [
-          responseStatus,
-          JSON.stringify(data ?? null),
-          r.id,
-          owner,
-          r.lease_version,
-        ],
-      );
-      return data;
-    });
+          reject(409, "REQUEST_IN_PROGRESS", "请求租约已变化", 2);
+        const data = await fn(c, ctx);
+        await c.execute(
+          "UPDATE idempotency_requests SET status='completed',response_status=?,response_body=?,locked_by=NULL,locked_until=NULL WHERE id=? AND locked_by=? AND lease_version=?",
+          [
+            responseStatus,
+            JSON.stringify(data ?? null),
+            r.id,
+            owner,
+            r.lease_version,
+          ],
+        );
+        return data;
+      },
+    );
   } catch (e) {
     if (
       e instanceof ApiFailure &&

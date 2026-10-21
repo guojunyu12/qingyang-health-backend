@@ -12,6 +12,7 @@ export const queueConnection = {
   maxRetriesPerRequest: null,
 };
 const fields: Record<string, string[]> = {
+  "m05.message.campaign.requested.v1": ["campaignId", "campaignVersion"],
   "media.validate.requested.v1": ["assetId"],
   "nutrition.recognition.requested.v1": ["jobId", "userId", "assetId"],
   "companion.reply.requested.v1": ["assistantMessageId", "sessionId", "userId"],
@@ -82,6 +83,39 @@ export async function enqueue(c: PoolConnection, event: any) {
     ],
   );
 }
+export type DirectOutboxLease = {
+  id: string;
+  event_type: string;
+  aggregate_id: string;
+  event_key: string;
+  payload: Record<string, unknown>;
+  locked_by: string;
+  lease_version: number;
+};
+const directConsumers = new Map<
+  string,
+  (lease: DirectOutboxLease) => Promise<unknown>
+>();
+const directTypes = new Set([
+  "activity.booking.confirmed.v1",
+  "activity.booking.canceled.v1",
+  "activity.slot.canceled.v1",
+  "points.redemption.requested.v1",
+  "points.redemption.finished.v1",
+  "m05.message.campaign.requested.v1",
+]);
+/** One dispatcher owns all event claims; registered M05 handlers receive its fenced lease. */
+export function registerDirectOutboxConsumer(
+  type: string,
+  consume: (lease: DirectOutboxLease) => Promise<unknown>,
+) {
+  if (!directTypes.has(type) || directConsumers.has(type))
+    throw Error("OUTBOX_CONSUMER_CONFLICT");
+  directConsumers.set(type, consume);
+  return () => {
+    if (directConsumers.get(type) === consume) directConsumers.delete(type);
+  };
+}
 export async function dispatchOnce() {
   const owner = randomUUID();
   const job: any = await transaction(async (c) => {
@@ -98,11 +132,25 @@ export async function dispatchOnce() {
     );
     return {
       ...r,
+      locked_by: owner,
       lease_version: Number(r.lease_version) + 1,
       attempts: r.attempts + 1,
     };
   });
   if (!job) return;
+  if (directTypes.has(job.event_type)) {
+    try {
+      const consume = directConsumers.get(job.event_type);
+      if (!consume) throw Error("M05_CONSUMER_NOT_REGISTERED");
+      await consume(job);
+    } catch {
+      await pool.execute(
+        "UPDATE outbox_events SET status='pending',next_attempt_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 30 SECOND),last_error_code='M05_CONSUMER_RETRY',locked_by=NULL,locked_until=NULL WHERE id=? AND status='processing' AND locked_by=? AND lease_version=?",
+        [job.id, job.locked_by, job.lease_version],
+      );
+    }
+    return;
+  }
   const queue = new Queue(queueName(job.event_type), {
     connection: queueConnection,
   });

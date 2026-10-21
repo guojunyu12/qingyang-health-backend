@@ -1,0 +1,325 @@
+import { randomUUID } from "node:crypto";
+import { MysqlUnitOfWork } from "../../common/database.js";
+import { EventQueue, EventLease } from "../../common/event-queue.js";
+import { requireValue } from "../../common/errors.js";
+import { MessagesService, campaign } from "./service.js";
+import type { NotificationInput } from "../../../../contracts/m05-notifications.js";
+import { uuid } from "../activities/model.js";
+export const notificationEvents = [
+  "activity.booking.confirmed.v1",
+  "activity.booking.canceled.v1",
+  "activity.slot.canceled.v1",
+  "points.redemption.finished.v1",
+  "m05.message.campaign.requested.v1",
+];
+type RecipientLease = {
+  id: string;
+  campaign_id: string;
+  user_id: string;
+  locked_by: string;
+  lease_version: number;
+};
+export class NotificationsWorker {
+  readonly queue: EventQueue;
+  private timer: ReturnType<typeof setInterval> | null = null;
+  private running: Promise<unknown> | null = null;
+  constructor(
+    readonly uow: MysqlUnitOfWork,
+    readonly service: MessagesService,
+    private checkpoint?: (name: string) => void,
+  ) {
+    this.queue = new EventQueue(uow, notificationEvents);
+  }
+  async targets(l: EventLease): Promise<NotificationInput[]> {
+    return this.uow.readSnapshot(async (tx) => {
+      const p = l.payload,
+        inputs: NotificationInput[] = [];
+      const emit = (
+        userId: string,
+        type: NotificationInput["type"],
+        title: string,
+        body: string,
+        path: string,
+        key: string,
+      ) =>
+        inputs.push({
+          userId,
+          type,
+          title,
+          body,
+          actionPath: path,
+          eventKey: key,
+        });
+      if (l.event_type === "m05.message.campaign.requested.v1") {
+        const c = await campaign(tx, uuid(p.campaignId));
+        requireValue(
+          c.id === l.aggregate_id &&
+            Number(p.campaignVersion) <= c.version &&
+            c.status !== "draft",
+          409,
+          "EVENT_SOURCE_MISMATCH",
+          "消息来源不匹配",
+        );
+        return [];
+      }
+      if (l.event_type === "points.redemption.finished.v1") {
+        const [r] = await tx.query<{
+          user_id: string;
+          status: string;
+          version: number;
+        }>("SELECT user_id,status,version FROM point_redemptions WHERE id=?", [
+          uuid(p.redemptionId),
+        ]);
+        requireValue(
+          r &&
+            p.redemptionId === l.aggregate_id &&
+            r.user_id === p.userId &&
+            r.status === p.status &&
+            r.version === p.redemptionVersion &&
+            ["fulfilled", "refunded"].includes(r.status),
+          409,
+          "EVENT_SOURCE_MISMATCH",
+          "兑换来源不匹配",
+        );
+        emit(
+          r.user_id,
+          "redemption_result",
+          r.status === "fulfilled" ? "数字权益已发放" : "兑换积分已退回",
+          r.status === "fulfilled"
+            ? "你兑换的数字权益已发放，请在本人订单中查看兑换信息。"
+            : "供应商已确认最终失败，本次兑换积分已原额退回。",
+          "/redemptions/" + p.redemptionId,
+          l.event_key,
+        );
+        return inputs;
+      }
+      if (l.event_type === "activity.slot.canceled.v1") {
+        const [s] = await tx.query<{ status: string; version: number }>(
+          "SELECT status,version FROM activity_slots WHERE id=?",
+          [uuid(p.slotId)],
+        );
+        requireValue(
+          s &&
+            p.slotId === l.aggregate_id &&
+            s.status === "canceled" &&
+            s.version >= Number(p.slotVersion),
+          409,
+          "EVENT_SOURCE_MISMATCH",
+          "取消场次来源不匹配",
+        );
+        const rows = await tx.query<{
+          id: string;
+          user_id: string;
+          booking_id: string;
+        }>(
+          "SELECT e.id,e.booking_id,b.user_id FROM booking_events e JOIN activity_bookings b ON b.id=e.booking_id WHERE b.slot_id=? AND e.action=? AND e.actor_user_id=? ORDER BY b.user_id,e.id",
+          [p.slotId as string, "host_cancel", uuid(p.actorUserId)],
+        );
+        for (const r of rows)
+          emit(
+            r.user_id,
+            "activity_canceled",
+            "活动场次已取消",
+            "主办方已取消你的活动场次，请查看预约记录中的取消说明。",
+            "/bookings/" + r.booking_id,
+            "activity_canceled:" + r.id,
+          );
+        return inputs;
+      }
+      const [r] = await tx.query<{
+        user_id: string;
+        slot_id: string;
+        action: string;
+        booking_id: string;
+      }>(
+        "SELECT b.user_id,b.slot_id,e.action,e.booking_id FROM booking_events e JOIN activity_bookings b ON b.id=e.booking_id WHERE e.id=?",
+        [uuid(p.bookingEventId)],
+      );
+      const confirmed = l.event_type === "activity.booking.confirmed.v1";
+      requireValue(
+        r &&
+          r.booking_id === p.bookingId &&
+          r.booking_id === l.aggregate_id &&
+          r.user_id === p.userId &&
+          r.slot_id === p.slotId &&
+          (confirmed
+            ? ["create", "rebook"].includes(r.action)
+            : r.action === "cancel"),
+        409,
+        "EVENT_SOURCE_MISMATCH",
+        "预约来源不匹配",
+      );
+      emit(
+        r.user_id,
+        confirmed ? "booking_confirmed" : "booking_canceled",
+        confirmed ? "活动预约成功" : "活动预约已取消",
+        confirmed
+          ? "你的活动预约已确认，请查看地点、时间和参加说明。"
+          : "你的活动预约已取消，原有名额已释放。",
+        "/bookings/" + r.booking_id,
+        l.event_key,
+      );
+      return inputs;
+    });
+  }
+  async consume(l: EventLease) {
+    requireValue(
+      this.service.port,
+      503,
+      "NOTIFICATIONS_NOT_CONFIGURED",
+      "通知适配器未接入",
+    );
+    for (const input of await this.targets(l)) {
+      const valid = await this.uow.runSystem("provider_job", async (tx) => {
+        const [u] = await tx.query<{
+          status: string;
+          deleted_at: string | null;
+        }>("SELECT status,deleted_at FROM users WHERE id=? FOR UPDATE", [
+          input.userId,
+        ]);
+        if (!(await this.queue.valid(tx, l))) return false;
+        if (u?.status === "active" && !u.deleted_at) {
+          await this.service.port!.createInTransaction(tx, input);
+          this.checkpoint?.("after_notification");
+        }
+        return true;
+      });
+      if (!valid) return { ignored: true };
+    }
+    await this.queue.ack(l);
+    return { processed: true };
+  }
+  async claimRecipient(id?: string): Promise<RecipientLease | null> {
+    return this.uow.runSystem("delivery_claim", async (tx) => {
+      const [r] = await tx.query<RecipientLease>(
+        `SELECT * FROM m05_message_recipients WHERE ${id ? "id=? AND " : ""}(status='pending' OR (status='processing' AND locked_until<=UTC_TIMESTAMP(3))) ORDER BY created_at,id LIMIT 1 FOR UPDATE SKIP LOCKED`,
+        id ? [id] : [],
+      );
+      if (!r) return null;
+      const token = randomUUID();
+      await tx.execute(
+        "UPDATE m05_message_recipients SET status='processing',locked_by=?,locked_until=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 30 SECOND),lease_version=lease_version+1,attempts=attempts+1,version=version+1 WHERE id=?",
+        [token, r.id],
+      );
+      return {
+        ...r,
+        locked_by: token,
+        lease_version: Number(r.lease_version) + 1,
+      };
+    });
+  }
+  async recipient(l: RecipientLease) {
+    requireValue(
+      this.service.port,
+      503,
+      "NOTIFICATIONS_NOT_CONFIGURED",
+      "通知适配器未接入",
+    );
+    const apply = async (error?: string) =>
+      this.uow.runSystem("provider_job", async (tx) => {
+        const [u] = await tx.query<{
+          status: string;
+          deleted_at: string | null;
+        }>("SELECT status,deleted_at FROM users WHERE id=? FOR UPDATE", [
+          l.user_id,
+        ]);
+        const c = await campaign(tx, l.campaign_id, true);
+        const [r] = await tx.query(
+          "SELECT id FROM m05_message_recipients WHERE id=? AND status=? AND locked_by=? AND lease_version=? AND locked_until>UTC_TIMESTAMP(3) FOR UPDATE",
+          [l.id, "processing", l.locked_by, l.lease_version],
+        );
+        if (!r) return { ignored: true };
+        const code =
+          error ||
+          (u?.status !== "active" || u.deleted_at
+            ? "RECIPIENT_UNAVAILABLE"
+            : null);
+        let noticeId: string | null = null;
+        if (!code) {
+          noticeId = (
+            await this.service.port!.createInTransaction(tx, {
+              userId: l.user_id,
+              type: "operations_message",
+              title: c.title,
+              body: c.body,
+              actionPath: c.action_path,
+              eventKey: `m05.message:${c.id}:${l.user_id}`,
+            })
+          ).id;
+          this.checkpoint?.("after_campaign_notification");
+        }
+        await tx.execute(
+          "UPDATE m05_message_recipients SET status=?,notification_id=?,last_error_code=?,locked_by=NULL,locked_until=NULL,version=version+1 WHERE id=?",
+          [code ? "failed" : "succeeded", noticeId, code, l.id],
+        );
+        const [stats] = await tx.query<{ pending: number; failed: number }>(
+          "SELECT SUM(status IN ('pending','processing')) pending,SUM(status='failed') failed FROM m05_message_recipients WHERE campaign_id=?",
+          [c.id],
+        );
+        await tx.execute(
+          "UPDATE m05_message_campaigns SET status=?,version=version+1 WHERE id=?",
+          [
+            Number(stats.pending) > 0
+              ? "sending"
+              : Number(stats.failed) > 0
+                ? "partial_failed"
+                : "completed",
+            c.id,
+          ],
+        );
+        return { status: code ? "failed" : "succeeded" };
+      });
+    try {
+      return await apply();
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      return apply(
+        code === "DEV_NOTIFICATION_FAILURE"
+          ? "DEV_NOTIFICATION_FAILURE"
+          : "IN_APP_PROCESSING_FAILED",
+      );
+    }
+  }
+  async tick() {
+    if (this.running) return this.running;
+    if (!this.service.port) return { processed: 0 };
+    this.running = (async () => {
+      let processed = 0;
+      for (let i = 0; i < 30; i++) {
+        const l = await this.queue.claim();
+        if (!l) break;
+        try {
+          await this.consume(l);
+          processed++;
+        } catch {
+          await this.queue.retry(l);
+        }
+      }
+      for (let i = 0; i < 100; i++) {
+        const l = await this.claimRecipient();
+        if (!l) break;
+        await this.recipient(l);
+        processed++;
+      }
+      return { processed };
+    })();
+    try {
+      return await this.running;
+    } finally {
+      this.running = null;
+    }
+  }
+  start() {
+    if (!this.service.port) return;
+    this.timer = setInterval(
+      () =>
+        void this.tick().catch(() => console.error("NOTIFICATION_SCAN_FAILED")),
+      3000,
+    );
+    this.timer.unref();
+  }
+  async stop() {
+    if (this.timer) clearInterval(this.timer);
+    await this.running?.catch(() => {});
+  }
+}

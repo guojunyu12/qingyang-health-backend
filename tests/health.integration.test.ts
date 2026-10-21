@@ -9,7 +9,7 @@ const integration = process.env.DB_NAME?.endsWith('_test') ? test : test.skip;
 integration('M02 real auth/CSRF, profile versions, water idempotency/isolation, weight and aggregates', async () => {
  process.env.AUTH_NO_LISTEN='1'; const {createApp}=await import('../src/main.js');
  let code=''; const identity=new IdentityService(async (_email,c)=>{code=c});
- const app=await createApp(identity); await app.listen(0,'127.0.0.1');
+ const app=await createApp(identity); delete modulePorts.points; delete modulePorts.pointsQuery; await app.listen(0,'127.0.0.1');
  const base=`http://127.0.0.1:${app.getHttpServer().address().port}/api/v1`;
  let cookies='',csrf='';
  const request=(path:string,method='GET',body?:unknown,key=randomUUID(),token=csrf)=>fetch(base+path,{method,headers:{Origin:'http://127.0.0.1:3001',Cookie:cookies,'X-CSRF-Token':token,'Idempotency-Key':key,...(body===undefined?{}:{'Content-Type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body)});

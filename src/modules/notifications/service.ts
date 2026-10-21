@@ -10,6 +10,7 @@ const allowed = [
   "booking_canceled",
   "activity_canceled",
   "redemption_result",
+  "operations_message",
 ];
 export class NotificationService {
   capabilities() {

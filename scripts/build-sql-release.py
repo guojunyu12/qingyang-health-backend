@@ -30,3 +30,19 @@ upgrade_history=''.join("INSERT INTO schema_migrations(version,sha256)VALUES('"+
 (root/'db/releases/QY-MYSQL-1.1.0_upgrade_from_V001.sql').write_text(guard+email+'\n'+safe+'\n'+retry+'\n'+upgrade_history)
 (root/'db/releases/SHA256SUMS.txt').write_text(''.join(sha(p.read_text())+'  '+p.name+'\n' for p in sorted((root/'db/releases').glob('*.sql'))))
 print('Generated full fresh install and M01-only 12-table reference SQL.')
+
+# M05 release snapshots: preserve earlier release files and generate V006 separately.
+migrations=sorted(folder.glob('V[0-9]*__*.sql'))
+version=lambda p:p.name.split('__')[0]
+records=lambda paths:''.join("INSERT INTO schema_migrations(version,sha256)VALUES('"+version(p)+"','"+sha(p.read_text())+"');\n" for p in paths)
+full_header='-- QY-MYSQL-1.1.0 / V006. MySQL 8.4. EMPTY DATABASE ONLY.\n-- Select the intended database first. Do not use mysql --force. No credentials or demo records.\n'
+full_history="\nCREATE TABLE schema_migrations(version VARCHAR(16) PRIMARY KEY,sha256 CHAR(64) NOT NULL,applied_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3));\n"
+(root/'db/releases/QY-MYSQL-1.1.0_V006_full_install.sql').write_text(full_header+'\n'.join(p.read_text() for p in migrations)+full_history+records(migrations))
+for start in ['V004','V005']:
+ prior=[p for p in migrations if version(p)<=start]
+ later=[p for p in migrations if version(p)>start]
+ matches=' AND '.join("(SELECT COUNT(*) FROM schema_migrations WHERE version='"+version(p)+"' AND sha256='"+sha(p.read_text())+"')=1" for p in prior)
+ check=f"-- Upgrade verified {start} to V006; preserves existing business data.\n-- Run once, stop at first error, never --force. DDL is not transactionally reversible.\nSET SESSION time_zone='+00:00';\nCREATE TEMPORARY TABLE qy_m05_upgrade_guard(n INT CHECK(n=0));\nINSERT INTO qy_m05_upgrade_guard SELECT CASE WHEN (SELECT COUNT(*) FROM schema_migrations)={len(prior)} AND {matches} THEN 0 ELSE 1 END;\nDROP TEMPORARY TABLE qy_m05_upgrade_guard;\n"
+ (root/f'db/releases/QY-MYSQL-1.1.0_upgrade_from_{start}_to_V006.sql').write_text(check+'\n'.join(p.read_text()+'\n'+records([p]) for p in later))
+(root/'db/releases/SHA256SUMS.txt').write_text(''.join(sha(p.read_text())+'  '+p.name+'\n' for p in sorted((root/'db/releases').glob('*.sql'))))
+print('Generated V006 fresh installation and guarded V004/V005 upgrades.')
