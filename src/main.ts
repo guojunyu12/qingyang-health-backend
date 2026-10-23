@@ -48,6 +48,11 @@ export async function createApp(service = new IdentityService()) {
           : error instanceof HttpException
             ? error.getStatus()
             : 500;
+      const retryAfterSeconds =
+        error instanceof ApiFailure ? error.retryAfterSeconds : undefined;
+      if (retryAfterSeconds) {
+        response.setHeader("Retry-After", retryAfterSeconds);
+      }
       response
         .status(status)
         .json({
@@ -64,6 +69,7 @@ export async function createApp(service = new IdentityService()) {
                 : status === 404
                   ? "接口不存在"
                   : "服务暂不可用，请稍后重试",
+            ...(retryAfterSeconds ? { retryAfterSeconds } : {}),
           },
           meta: {
             requestId: randomUUID(),

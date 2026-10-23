@@ -1,6 +1,6 @@
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { IdentityService } from "../src/modules/identity/service.js";
 import { pool } from "../src/common/database.js";
 import { redis } from "../src/modules/identity/limiter.js";
@@ -73,6 +73,33 @@ integration(
       assert.equal(session.id, user.id);
       assert.equal(session.identityMode, "m01_email");
       assert.ok(session.csrfToken);
+      const pendingRequestId = randomUUID();
+      const pendingKey = randomUUID();
+      await pool.execute(
+        "INSERT INTO idempotency_requests(id,principal_key,method,request_path,idempotency_key,body_hash,status,expires_at,locked_by,locked_until) VALUES(?,?,'POST','/api/v1/me/points/check-in',?,?,'processing',DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 1 HOUR),?,DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 30 SECOND))",
+        [
+          pendingRequestId,
+          "user:" + user.id,
+          pendingKey,
+          createHash("sha256").update("{}").digest("hex"),
+          randomUUID(),
+        ],
+      );
+      try {
+        const pending = await request("/me/points/check-in", "POST", {}, {
+          "X-CSRF-Token": session.csrfToken,
+          "Idempotency-Key": pendingKey,
+        });
+        assert.equal(pending.status, 409);
+        assert.equal(pending.headers.get("Retry-After"), "2");
+        const error = (await pending.json()).error;
+        assert.equal(error.code, "REQUEST_IN_PROGRESS");
+        assert.equal(error.retryAfterSeconds, 2);
+      } finally {
+        await pool.execute("DELETE FROM idempotency_requests WHERE id=?", [
+          pendingRequestId,
+        ]);
+      }
       assert.equal((await request("/admin/points/accounts")).status, 403);
       assert.equal((await request("/admin/overview")).status, 403);
       const account = await request("/me/points/account");
@@ -150,6 +177,45 @@ integration(
           "Idempotency-Key": randomUUID(),
         });
       assert.equal((await adminRequest("/admin/overview")).status, 200);
+      const unavailableReward = await read(
+        await adminRequest("/admin/points/rewards", "POST", {
+          title: "未配置供应商保护测试",
+          description: "仅隔离测试库使用，不对应真实权益",
+          costPoints: 10,
+          stock: 2,
+          dailyLimit: 1,
+        }),
+        201,
+      );
+      const publish = await adminRequest(
+        `/admin/points/rewards/${unavailableReward.id}/publish`,
+        "POST",
+        { version: unavailableReward.version },
+      );
+      assert.equal(publish.status, 503);
+      assert.equal((await publish.json()).error.code, "PROVIDER_UNAVAILABLE");
+      // Simulate an already published catalog item after supplier configuration is removed.
+      // This is isolated test setup, never an operational publication path.
+      await pool.execute("UPDATE point_rewards SET status='published' WHERE id=?", [
+        unavailableReward.id,
+      ]);
+      const refusedRedemption = await request("/me/points/redemptions", "POST", {
+        rewardId: unavailableReward.id,
+        expectedRewardVersion: unavailableReward.version,
+        quantity: 1,
+      }, {
+        "X-CSRF-Token": session.csrfToken,
+        "Idempotency-Key": randomUUID(),
+      });
+      assert.equal(refusedRedemption.status, 503);
+      assert.equal((await refusedRedemption.json()).error.code, "PROVIDER_UNAVAILABLE");
+      const [unchanged] = await pool.query<import("mysql2/promise").RowDataPacket[]>(
+        "SELECT r.stock,a.balance,(SELECT COUNT(*) FROM point_redemptions WHERE reward_id=r.id) orders FROM point_rewards r JOIN point_accounts a ON a.user_id=? WHERE r.id=?",
+        [user.id, unavailableReward.id],
+      );
+      assert.equal(unchanged[0].stock, 2);
+      assert.equal(unchanged[0].balance, 25);
+      assert.equal(unchanged[0].orders, 0);
       const activity = await read(
         await adminRequest("/admin/activities", "POST", {
           title: "整合验收活动",
